@@ -1,0 +1,77 @@
+#  Configuring address settings in addressSettings section of ActiveMQArtemis CR
+
+It is crucial to define how messaging addresses behave within your AMQ Broker deployment. This section details how to configure address settings by leveraging the `addressSettings` section directly within your `ActiveMQArtemis` Custom Resource (CR). This method is particularly useful when you are managing your messaging addresses through `ActiveMQArtemisAddress` CR instances.
+
+== Configuring Address Settings in `ActiveMQArtemis` CR's `addressSettings` section
+
+When you define your messaging addresses and queues using `ActiveMQArtemisAddress` CR instances, you can centralize their behavioral settings in the `addressSettings` section of your main `ActiveMQArtemis` CR instance. This approach allows you to group and apply specific configurations (such as dead letter queues, message expiry, or delivery attempt limits) to addresses matching defined patterns.
+
+=== Technical Explanation
+
+The `addressSettings` section in the `ActiveMQArtemis` CR's `spec` is a list of configuration objects. Each object specifies a `match` pattern and a set of properties that apply to any address whose name matches that pattern.
+
+.Key Properties within `addressSettings`
+*   `match`: (Required) This property defines the address pattern to which the settings apply.
+    *   The value of `match` should be enclosed in single quotation marks (e.g., `'myOtherAddresses#'`).
+    *   Wildcards like `*` (matches any sequence of zero or more characters within a single address segment) and `#` (matches any sequence of zero or more characters across multiple address segments) can be used.
+*   `deadLetterAddress`: Specifies the address where undeliverable messages are sent.
+*   `deadLetterQueue`: Specifies the queue on the `deadLetterAddress` where undeliverable messages are stored. This queue must exist and be configured appropriately.
+*   `maxDeliveryAttempts`: Defines the maximum number of times the broker attempts to deliver a message to a client before considering it undeliverable and potentially sending it to a dead-letter queue.
+*   `applyRule`: (Optional) Specifies how the Operator applies the configuration when multiple settings might apply to the same address. Common values include `merge_all` (default) which merges settings from all matching rules.
+
+By configuring `deadLetterAddress` and `deadLetterQueue`, you provide a robust mechanism for handling messages that cannot be delivered to their intended clients. This prevents infinite delivery attempts and allows administrators to inspect and potentially reprocess messages that encountered issues.
+
+When defining these settings, it's important to consider any default configurations and avoid overlapping properties with the same value to prevent unexpected behavior. The Operator prioritizes more specific `match` patterns over general ones.
+
+=== Hands-on Activity: Configuring Dead Letter Addresses and Delivery Attempts
+
+This activity demonstrates how to configure dead letter addresses, queues, and maximum delivery attempts for specific address patterns using the `addressSettings` section in your `ActiveMQArtemis` CR.
+
+==== Prerequisites
+
+*   You have an existing AMQ Broker deployment running on OpenShift. Refer to xref:ref-to-basic-broker-deployment-section[Deploying a Basic Broker Instance] for instructions.
+*   You have created a dedicated address and queue to serve as your dead letter destination. For this activity, we assume you have created an `ActiveMQArtemisAddress` CR defining:
+    *   `addressName: myDeadLetterAddress`
+    *   `queueName: myDeadLetterQueue`
+    *   `routingType: anycast`
+    For details on creating addresses and queues, refer to xref:ref-to-address-queue-config-section[Configuring Addresses and Queues].
+
+==== Procedure
+
+.Edit the `ActiveMQArtemis` CR for your broker deployment.
++
+[source,bash]
+----
+oc edit activemqartemis <broker-instance-name> -n <project-name>
+----
+
+.Navigate to the `spec` section and add or modify the `addressSettings` list as shown in the example below. This configuration will:
+*   Route undeliverable messages for addresses matching `usa-news.*` to `myDeadLetterAddress` and `myDeadLetterQueue`, with a maximum of 3 delivery attempts.
+*   Route undeliverable messages for addresses matching `europe-news.#` to `myDeadLetterAddress` and `myDeadLetterQueue`, with a maximum of 5 delivery attempts.
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: ex-all-artemis
+spec:
+  # ... other broker configurations ...
+  addressSettings:
+    - match: 'usa-news.*'
+      deadLetterAddress: myDeadLetterAddress
+      deadLetterQueue: myDeadLetterQueue
+      maxDeliveryAttempts: 3
+    - match: 'europe-news.#'
+      deadLetterAddress: myDeadLetterAddress
+      deadLetterQueue: myDeadLetterQueue
+      maxDeliveryAttempts: 5
+----
+
+.Save the `ActiveMQArtemis` CR.
++
+The OpenShift Operator will detect the changes and apply them to your broker instance. This might trigger a rolling restart of the broker pods to ensure the new address settings are loaded.
+
+.Verify the applied settings.
++
+You can verify the configuration by checking the broker's logs for any errors during startup or by inspecting the broker's management console or JMX interface (if exposed) to confirm that the address settings have been applied correctly to the relevant address patterns. For instance, you could try sending messages to `usa-news.topic1` and then simulate delivery failures to observe messages appearing in `myDeadLetterQueue`.

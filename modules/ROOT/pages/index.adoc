@@ -1,22 +1,27 @@
-= An Example Quick Course
+=  Address Settings for AMQ Broker on OpenShift
 :navtitle: Home
 
 == Introduction
 
-Course Title: Course title FIXME
+Course Title:  Address Settings for AMQ Broker on OpenShift
 
 Description:
 Course description FIXME
 
 Duration: FIXME hours
 
-== Objectives
+== Topics covered in this course
 
-On completing this course, you should be able to:
 
-* Observable, measurable objective...
-* Observable, measurable objective...
-* Observable, measurable objective...
+*  Configuring Address Settings
+
+*  Address Settings Configuration
+
+*  Avoiding Default Configuration Inclusion
+
+*  Overlapping Address Settings
+
+
 
 == Prerequisites
 

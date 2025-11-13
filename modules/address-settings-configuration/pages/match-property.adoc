@@ -1,0 +1,109 @@
+#  match property
+
+This section describes the `match` property used in Address Settings for AMQ Broker on OpenShift.
+
+### match property
+
+The `match` property is a crucial component of address settings, allowing you to associate a specific set of configuration rules with one or more addresses on the AMQ Broker.
+
+#### Description and Usage
+
+The `match` property defines a string that the AMQ Broker uses to match address settings to addresses configured on the broker. You can specify an exact address name or use a wildcard expression to match the address settings to a *set* of addresses.
+
+When using a wildcard expression as a value for the `match` property, you *must* enclose the value in single quotation marks (e.g., `'myAddresses*'`).
+
+.Wildcard Characters
+The AMQ Broker supports two wildcard characters for matching address patterns:
+
+*   `#` (hash): This wildcard character matches any sequence of words, separated by periods. It can only be used at the end of the address string. For example:
+    *   `europe-news.#` matches `europe-news`, `europe-news.politics`, and `europe-news.politics.fr`.
+*   `*` (asterisk): This wildcard character matches a single word. It can be used anywhere within the address string. For example:
+    *   `usa-news.*` matches `usa-news.domestic` and `usa-news.intl`, but not `usa-news.domestic.politics`.
+    *   `finance.*.reports` matches `finance.monthly.reports` but not `finance.quarterly.annual.reports`.
+
+.Note
+When configuring `brokerProperties` entries, a period (`.`) is a reserved character. If you intend to create an address pattern that contains a period and want it to be treated literally rather than as a separator for words in a wildcard expression, you must enclose the entire address pattern in quotation marks. For example, `"usa-news.*"` ensures the pattern matching works as expected with the period.
+
+*   **Type**: string
+*   **Example**: `'myAddresses*'`, `'queue.example.#'`, `myExactQueue`
+*   **Default value**: None
+
+#### Hands-on Activity: Configuring Address Settings with `match`
+
+In this activity, you will configure address settings for an AMQ Broker instance on OpenShift using the `ActiveMQArtemis` custom resource (CR). You will define two different address settings, each using the `match` property to target specific addresses or address patterns.
+
+.Prerequisites
+*   An OpenShift cluster with the AMQ Broker Operator installed.
+*   An `ActiveMQArtemis` instance already deployed, named `ex-all-artemis` in the `my-broker-project` namespace. If you don't have one, you can deploy a basic instance using the command:
+    ```bash
+    oc apply -f - <<EOF
+    apiVersion: broker.amq.io/v1beta1
+    kind: ActiveMQArtemis
+    metadata:
+      name: ex-all-artemis
+      namespace: my-broker-project
+    spec:
+      deploymentPlan:
+        size: 1
+    EOF
+    ```
+
+.Steps
+
+.  **Log in to OpenShift**
+    Ensure you are logged in to your OpenShift cluster and are in the correct project:
+    ```bash
+    oc login -u developer -p developer
+    oc project my-broker-project
+    ```
+
+.  **Edit the ActiveMQArtemis CR**
+    You will edit the `ex-all-artemis` instance to add address settings. Open the CR for editing:
+    ```bash
+    oc edit ActiveMQArtemis ex-all-artemis
+    ```
+
+.  **Add Address Settings**
+    Navigate to the `spec` section and add the `addressSettings` block as shown below. This configuration includes:
+    *   An `applyRule: merge_all` to ensure our settings are merged with any defaults.
+    *   An address setting for an exact address `myAddress` with `maxDeliveryAttempts: 5`.
+    *   An address setting for all addresses starting with `myOtherAddresses.` using the `myOtherAddresses#` wildcard, setting `maxDeliveryAttempts: 3`. Note the single quotes around the wildcard pattern.
+
+    Modify the `spec` section to include the `addressSettings` block:
+
+    ```yaml
+    # ... (existing ActiveMQArtemis CR content)
+    spec:
+      # ... (other spec properties)
+      addressSettings:
+        applyRule: merge_all
+        addressSetting:
+        - match: myAddress
+          deadLetterAddress: myDeadLetterAddress
+          maxDeliveryAttempts: 5
+        - match: 'myOtherAddresses#'
+          deadLetterAddress: myDeadLetterAddress
+          maxDeliveryAttempts: 3
+    # ... (rest of the ActiveMQArtemis CR content)
+    ```
+
+    Save the changes and exit the editor (`:wq`).
+
+.  **Verify the Configuration**
+    After saving, the AMQ Broker Operator will reconcile the changes. You can check the `status` section of the `ActiveMQArtemis` CR for any errors and to ensure the broker pod restarts if necessary.
+    ```bash
+    oc get ActiveMQArtemis ex-all-artemis -o yaml | less
+    ```
+    Look for a `BrokerProperties` section or similar in the `status` to confirm the address settings were applied without issues. You can also inspect the broker logs:
+    ```bash
+    oc logs -f $(oc get pod -l app.kubernetes.io/name=ex-all-artemis -o jsonpath='{.items[0].metadata.name}')
+    ```
+    Search for messages related to address configuration during broker startup.
+
+.  **Test the Address Settings (Optional)**
+    To fully test, you would connect to the AMQ Broker, create messages for `myAddress` and addresses like `myOtherAddresses.queue1`, and observe how `maxDeliveryAttempts` is applied when messages cannot be delivered successfully (e.g., by simulating consumer failure). This typically involves:
+    *   Deploying an application that connects to the broker.
+    *   Sending messages to `myAddress` and `myOtherAddresses.something`.
+    *   Observing message behavior in case of delivery failures.
+
+This activity demonstrates how to use the `match` property within the `ActiveMQArtemis` CR to configure different address settings based on exact names or wildcard patterns.

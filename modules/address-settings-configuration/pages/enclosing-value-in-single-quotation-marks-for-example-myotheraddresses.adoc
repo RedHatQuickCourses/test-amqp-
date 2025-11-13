@@ -1,0 +1,57 @@
+#  Enclosing value in single quotation marks, for example, myOtherAddresses#
+
+= Enclosing `match` Property Values in Single Quotation Marks
+
+When configuring address settings for AMQ Broker on OpenShift, the `match` property within an `addressSetting` block plays a crucial role in defining which addresses or address patterns a particular configuration applies to. It allows you to specify a literal address name or a pattern using wildcard characters.
+
+== The `match` Property and Wildcard Expressions
+
+The `match` property is used to define the address or pattern for which the `addressSetting` configuration is applied. While simple literal address names do not require special enclosing, using *wildcard expressions* necessitates enclosing the `match` property's value in single quotation marks.
+
+This is particularly important when you want to apply a configuration to a group of addresses rather than a single, specific one.
+
+=== Understanding Wildcard Characters
+
+AMQ Broker supports the following wildcard characters in address patterns:
+
+*   `#`: The hash character matches *any* address that starts with the preceding string, regardless of how many words follow. For example, `europe-news.#` matches `europe-news`, `europe-news.politics`, and `europe-news.politics.fr`.
+*   `*`: The asterisk character matches a *single word* and can be used anywhere within the address string. For example, `usa-news.*` matches `usa-news.domestic` and `usa-news.intl`, but not `usa-news.domestic.politics`.
+
+When you incorporate these wildcard characters into your `match` property value, you *must* enclose the entire value in single quotation marks. This ensures that the Kubernetes Operator correctly interprets the pattern and does not misinterpret the special characters.
+
+[NOTE]
+In `brokerProperties` entries, a period (`.`) is a reserved character. If you want to create an address pattern that contains a period and a wildcard, you must enclose the address in quotation marks. For example, `"usa-news.*"`. However, for `ActiveMQArtemisAddress` CR or `addressSettings` within `ActiveMQArtemis` CR, single quotes around the entire `match` value containing a wildcard are the standard.
+
+=== Example: Configuring Address Settings for a Wildcard Pattern
+
+Let's consider an example where you want to apply specific address settings, such as a dead letter address and maximum delivery attempts, to any address that starts with `myOtherAddresses`.
+
+In this scenario, you would use the hash wildcard character (`#`) to match the pattern `myOtherAddresses#`, and you would enclose this pattern in single quotation marks as `'myOtherAddresses#'`.
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker-instance
+spec:
+  # ... other broker configurations ...
+  addressSettings:
+    applyRule: merge_all # <1>
+    addressSetting:
+    - match: myAddress
+      deadLetterAddress: myDeadLetterAddress
+      maxDeliveryAttempts: 5
+    - match: 'myOtherAddresses#' # <2>
+      deadLetterAddress: myDeadLetterAddressForOthers
+      maxDeliveryAttempts: 3
+----
+<1> The `applyRule` property specifies how the Operator applies the configuration (e.g., `merge_all`).
+<2> The `match` property uses a wildcard expression `'myOtherAddresses#'` to apply the settings to all addresses starting with `myOtherAddresses`. The single quotes are crucial here.
+
+In this example:
+
+*   The first `addressSetting` block applies specific rules to the literal address `myAddress`.
+*   The second `addressSetting` block applies a different set of rules (e.g., `maxDeliveryAttempts: 3`) to *any* address that starts with `myOtherAddresses`, such as `myOtherAddresses.queue1`, `myOtherAddresses.topic.sub1`, etc. The single quotes around `'myOtherAddresses#'` are essential for the Operator to correctly interpret this wildcard pattern.
+
+By correctly enclosing wildcard expressions in single quotation marks, you ensure that your AMQ Broker address settings are applied as intended, providing flexible and robust message routing and delivery management.

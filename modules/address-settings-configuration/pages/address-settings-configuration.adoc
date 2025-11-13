@@ -1,0 +1,10 @@
+#  Address Settings Configuration
+
+Address settings for AMQ Broker on OpenShift are configured to apply specific rules to address patterns.
+These settings can be defined using the `brokerProperties` attribute in the `ActiveMQArtemis` CR or within the `addressSettings` section of the `ActiveMQArtemis` CR when an `ActiveMQArtemisAddress` CR is used.
+Key configuration properties include:
+
+* `match`: Specifies the address criteria, with its value enclosed in single quotation marks (e.g., `'myOtherAddresses#'`).
+* `applyRule`: Dictates how the Operator applies the configuration (e.g., `merge_all`).
+
+It's important to avoid including properties in the CR that are already part of the default configuration or have the same value, even if not explicitly specified, to prevent overlapping settings.

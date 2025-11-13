@@ -1,0 +1,7 @@
+* xref:configuring-address-settings.adoc[]
+** xref:using-brokerproperties-attribute-in-activemqartemis-cr-instance.adoc[]
+** xref:configuring-address-settings-under-brokerproperties.adoc[]
+** xref:example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.adoc[]
+** xref:using-activemqartemisaddress-cr-instance.adoc[]
+** xref:configuring-address-settings-in-addresssettings-section-of-activemqartemis-cr.adoc[]
+** xref:example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.adoc[]

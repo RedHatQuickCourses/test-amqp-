@@ -1,0 +1,2 @@
+* xref:avoiding-default-configuration-inclusion.adoc[]
+** xref:not-including-properties-specified-in-the-default-configuration-even-if-not-specified-in-the-cr.adoc[]

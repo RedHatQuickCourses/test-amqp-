@@ -1,0 +1,182 @@
+#  Configuring address settings under brokerProperties
+
+[[configuring-address-settings-brokerproperties]]
+= Configuring Address Settings with brokerProperties
+
+Address settings in AMQ Broker on OpenShift allow you to define various behaviors for groups of addresses that match a specific pattern. These settings are crucial for managing message flow, handling undeliverable messages, and ensuring reliable message delivery. When you manage your AMQ Broker deployment using the `ActiveMQArtemis` Custom Resource (CR), you have the flexibility to configure these address settings directly within the `brokerProperties` attribute of your `ActiveMQArtemis` CR instance.
+
+This section details how to configure address settings using the `brokerProperties` attribute, focusing on practical examples like setting up dead-letter addresses and queues.
+
+== Understanding brokerProperties for Address Settings
+
+The `brokerProperties` attribute within the `spec` section of an `ActiveMQArtemis` CR instance provides a powerful mechanism to inject specific configuration properties directly into the broker's `broker.xml` configuration file. Each entry in `brokerProperties` is essentially a key-value pair that the Operator processes and translates into the appropriate broker configuration.
+
+For address settings, the structure typically follows this format:
+
+`addressSettings.<match-pattern>.<setting-name>=<setting-value>`
+
+Here's a breakdown:
+
+*   `addressSettings`: This prefix indicates that you are configuring address settings.
+*   `<match-pattern>`: This is a critical part that defines which addresses these settings apply to. It can be a specific address name, a wildcard pattern, or a composite address.
+    *   **Wildcards**: You can use `*` to match any sequence of zero or more characters, and `#` to match one or more dot-separated words.
+    *   **Quotation Marks**: As per the objectives, if your `match` property contains special characters or wildcards, it is essential to enclose its value in single quotation marks. For example, `addressSettings.'myOtherAddresses#'` would apply settings to addresses matching `myOtherAddresses#`.
+*   `<setting-name>`: The specific setting you want to configure, such as `deadLetterAddress`, `deadLetterQueue`, `expiryAddress`, `redeliveryDelay`, etc.
+*   `<setting-value>`: The value for the specified setting.
+
+=== Example: Dead Letter Address and Queue
+
+A common use case for address settings is to configure a *dead-letter address* and *dead-letter queue*. These are used by the broker to store messages that cannot be delivered to a client (e.g., after multiple redelivery attempts fail). This prevents infinite delivery attempts and allows administrators to inspect and potentially reprocess undelivered messages.
+
+When configuring a dead-letter address:
+
+*   `deadLetterAddress`: Specifies the address where undeliverable messages will be sent.
+*   `deadLetterQueue`: Specifies the queue associated with the dead-letter address. This queue must be defined separately or implicitly created if it doesn't exist.
+
+=== Applying Configuration Rules with `applyRule`
+
+The `applyRule` property specifies how the Operator applies the configuration when merging with existing or default address settings. When used within `brokerProperties`, it typically applies to a broad match pattern like `#` to govern the overall merging strategy for all address settings.
+
+For example, `addressSettings.'#'.applyRule=merge_all` indicates that the Operator should merge your specified address settings with any existing default address settings, rather than replacing them entirely. This is often the desired behavior for extending or overriding specific defaults.
+
+=== Avoiding Default Configuration Inclusion and Overlapping Settings
+
+When using `brokerProperties` for address settings, be mindful of the following:
+
+*   **Avoid Redundancy**: Do not include properties that are already specified in the default configuration unless you explicitly intend to override them. The Operator intelligently merges configurations, and specifying default values unnecessarily adds clutter.
+*   **Prevent Overlaps**: Ensure that you do not define properties with the same value in both your `brokerProperties` configuration and any default entry sub-entry, especially if the `applyRule` is set to `merge_all`. This can lead to unexpected behavior or redundant configurations within the `broker.xml`.
+
+== Hands-on Activity: Configuring Dead Letter Addresses via brokerProperties
+
+In this activity, you will modify an existing `ActiveMQArtemis` CR instance to configure dead-letter addresses and queues for two distinct address patterns using the `brokerProperties` attribute.
+
+=== Prerequisites
+
+*   An OpenShift cluster with the AMQ Broker Operator installed.
+*   A basic `ActiveMQArtemis` broker instance already deployed and running in your project. If you don't have one, you can deploy a simple instance:
++
+```bash
+oc apply -f - <<EOF
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.10
+    extraMounts:
+      # Required for this lab to allow inspection of broker.xml
+      volumeMounts:
+        - name: broker-config
+          mountPath: /home/jboss/amq-broker/etc
+      volumes:
+        - name: broker-config
+          emptyDir: {}
+EOF
+```
++
+Wait for the `my-broker` pod to be in a `Running` state. You can check its status using:
++
+```bash
+oc get activemqartemises my-broker -o jsonpath='{.status.brokerPods[0].podName}'
+```
+
+=== Procedure
+
+. **Identify your `ActiveMQArtemis` CR instance.**
++
+Ensure you are in the correct OpenShift project:
++
+```bash
+oc project <your-project-name>
+```
++
+List your `ActiveMQArtemis` instances:
++
+```bash
+oc get activemqartemises
+```
++
+You should see `my-broker` (or the name of your broker instance).
+
+. **Edit the `ActiveMQArtemis` CR instance.**
++
+Open the CR for editing:
++
+```bash
+oc edit activemqartemis my-broker
+```
+
+. **Add `brokerProperties` to configure dead-letter addresses.**
++
+Locate the `spec` section and add the `brokerProperties` attribute if it doesn't already exist. Then, add the following lines to configure dead-letter addresses for two different address patterns. Ensure proper YAML indentation.
++
+[source,yaml]
+----
+spec:
+  # ... other spec configurations ...
+  brokerProperties:
+    - addressSettings.'usa-news.*'.deadLetterAddress=usDeadLetter
+    - addressSettings.'usa-news.*'.deadLetterQueue=usaDeadLetterQueue
+    - addressSettings.'europe-news.#'.deadLetterAddress=euDeadLetter
+    - addressSettings.'europe-news.#'.deadLetterQueue=europeDeadLetterQueue
+    - addressSettings.'#'.applyRule=merge_all
+----
++
+*   The `'usa-news.*'` pattern uses `*` to match `usa-news.sports`, `usa-news.weather`, etc.
+*   The `'europe-news.#'` pattern uses `#` to match `europe-news.sports`, `europe-news.sports.football`, etc.
+*   We enclose the match patterns in single quotes (e.g., `'usa-news.*'`, `'europe-news.#'`, `'#'`) as they contain special characters (`*`, `#`).
+*   We've also added `addressSettings.'#'.applyRule=merge_all` to ensure our custom settings are merged with any existing default configuration, rather than replacing it entirely. This is generally a safer approach for extending configurations.
+
+. **Save and apply the changes.**
++
+Save the `ActiveMQArtemis` CR. The Operator will detect the changes, update the broker deployment, and redeploy the broker pod(s). This might take a few moments.
+
+. **Verify the configuration within the broker pod.**
++
+Once the broker pod restarts and is running, you can inspect its `broker.xml` configuration file to confirm that the address settings have been applied.
++
+First, get the name of your broker pod:
++
+```bash
+oc get pods -l app.kubernetes.io/name=my-broker -o jsonpath='{.items[0].metadata.name}'
+```
++
+Let's assume the pod name is `my-broker-ss-0`. Then, execute into the pod and view the relevant `broker.xml` content:
++
+```bash
+oc exec -it my-broker-ss-0 -- cat /home/jboss/amq-broker/etc/broker.xml | xmllint --format - | grep -A 10 "<address-settings>"
+```
++
+You should see output similar to this (formatted for readability, actual output might contain more default settings):
++
+[source,xml]
+----
+<address-settings>
+   <address-setting match="usa-news.*">
+      <dead-letter-address>usDeadLetter</dead-letter-address>
+      <dead-letter-queue>usaDeadLetterQueue</dead-letter-queue>
+      <!-- ... other default settings for usa-news.* ... -->
+   </address-setting>
+   <address-setting match="europe-news.#">
+      <dead-letter-address>euDeadLetter</dead-letter-address>
+      <dead-letter-queue>europeDeadLetterQueue</dead-letter-queue>
+      <!-- ... other default settings for europe-news.# ... -->
+   </address-setting>
+   <address-setting match="#">
+      <apply-rule>MERGE_ALL</apply-rule>
+      <!-- ... other default settings for all addresses ... -->
+   </address-setting>
+</address-settings>
+----
++
+This confirms that the `brokerProperties` entries were correctly translated into `address-setting` elements in the `broker.xml`, and the `applyRule` for the global match `#` is also present.
+
+=== Further Exploration
+
+*   **Testing Dead Letters**: You could extend this lab by sending messages to `usa-news.sports` with a small `max-delivery-attempts` configured via another `brokerProperties` entry (e.g., `addressSettings.'usa-news.*'.maxDeliveryAttempts=1`) and observing them being redirected to `usDeadLetter` after a single failed delivery.
+*   **Other Settings**: Explore other address settings available, such as `expiryAddress`, `redeliveryDelay`, `maxSizeBytes`, etc., and experiment with adding them via `brokerProperties`.
+*   **`applyRule` Impact**: Change the `applyRule` for the global match `#` to `replace_all` and observe how it affects the `broker.xml` configuration, particularly regarding default settings, which might be entirely overridden.
+
+This completes the configuration of address settings using the `brokerProperties` attribute. You have learned how to define specific behaviors for address patterns, including setting up dead-letter handling, directly through your `ActiveMQArtemis` Custom Resource.

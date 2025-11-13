@@ -1,0 +1,137 @@
+#  Ensuring not to include properties with the same value in both CR and default Entry Sub-entry
+
+This section focuses on the best practices for configuring address settings for AMQ Broker on OpenShift, specifically addressing how to avoid redundancy by not specifying properties in your `ActiveMQArtemis` Custom Resource (CR) that already match the broker's default values.
+
+== Ensuring Non-Redundant Address Settings in ActiveMQArtemis CR
+
+When configuring address settings for AMQ Broker on OpenShift using the `ActiveMQArtemis` Custom Resource (CR), you are interacting with a system that comes with a set of predefined default address configurations. These defaults are applied by the broker unless explicitly overridden or modified by your CR. The objective of "Ensuring not to include properties with the same value in both CR and default Entry Sub-entry" is a best practice aimed at maintaining a clean, efficient, and easily maintainable configuration for your broker.
+
+=== Technical Explanation
+
+Understanding how broker defaults interact with your CR configuration is crucial for effective management.
+
+*   **Understanding Default Overlap:**
+    *   AMQ Broker ships with sensible default values for many address settings, such as `maxDeliveryAttempts`, `deadLetterAddress`, and `maxSizeMessages`. These defaults are applied globally or to specific address patterns by the broker itself.
+    *   When you define an address setting in your `ActiveMQArtemis` CR, the Operator processes this configuration based on the `applyRule` property (which defaults to `merge_all` if not specified).
+    *   If a property specified in your CR has *the exact same value* as the broker's default for that property and the matching address pattern, it creates a redundant entry in your configuration.
+
+*   **Why Avoid Redundancy?**
+    While specifying a property with its default value in your CR won't cause the broker to fail, it introduces several disadvantages:
+
+    .1. *Clarity and Readability:* An `ActiveMQArtemis` CR filled with properties that simply reiterate default values becomes overly verbose. This clutter can obscure the actual custom configurations you intend to apply, making the CR harder to read, understand, and review for yourself and other team members.
+    .2. *Maintenance Overhead:* Explicitly defining a default value in your CR can lead to long-term maintenance challenges:
+        *   If Red Hat updates a default value for a particular property in a future AMQ Broker version (e.g., to improve performance, security, or introduce new features), your CR will continue to enforce the older, explicitly specified default. This means your broker will not automatically benefit from the updated default unless you manually remove or update the redundant entry in your CR.
+        *   Troubleshooting can become more complex, as you might spend time verifying why a "custom" setting behaves exactly like the default, only to discover it *is* the default.
+    .3. *Configuration Complexity:* Redundant settings can add unnecessary complexity to tasks like auditing and compliance checks. It becomes less clear which settings are truly custom and which are merely explicit declarations of existing defaults, potentially leading to misinterpretations.
+
+*   **How `applyRule` Interacts with Overlapping Settings:**
+    The `applyRule` property defines how the Operator merges your CR's address settings with the broker's default configuration. Understanding its behavior reinforces the best practice of avoiding redundancy:
+
+    *   `merge_all` (Default):
+        When a property exists in both the CR and the default configuration for a matching address pattern, the CR's value will replace the default's. Properties unique to either the CR or the default will be included in the final configuration. Even with `merge_all`, a redundant property in your CR will overwrite the default with the same value, adding no functional change but contributing to verbosity.
+    *   `merge_replace`:
+        For properties that match in both the CR and default, only the CR's settings are included in the final configuration. Critically, any properties from the default configuration that are *not* explicitly specified in the CR are also *not* included. This means `merge_replace` is more aggressive in pruning defaults; it effectively states, "for this address pattern, only use what's explicitly defined in the CR, and ignore other defaults not mentioned."
+    *   `replace_all`:
+        All address settings specified in the default configuration for the matching pattern are entirely replaced by those specified in the CR. The final configuration corresponds exactly to what's defined in the CR.
+
+    Regardless of the `applyRule` chosen, intentionally specifying a property with its default value in your CR is generally unnecessary and can lead to the issues outlined above. The Operator is designed to apply defaults unless explicitly instructed otherwise.
+
+**Best Practice Recommendation:**
+
+As a general guideline, only include address setting properties in your `ActiveMQArtemis` CR that you explicitly intend to *change* from the broker's default behavior for a given address pattern. If you want a property to retain its default value, simply omit it from your CR. This approach ensures your configurations are concise, clear, and future-proof.
+
+=== Hands-on Activity: Identifying and Removing Redundant Address Settings
+
+This activity demonstrates how to identify and clean up redundant address settings in an `ActiveMQArtemis` CR. For this lab, we'll assume a common default setting: `maxDeliveryAttempts=10` for a general address pattern.
+
+**Prerequisites:**
+
+*   An OpenShift cluster with the AMQ Broker Operator installed.
+*   `oc` CLI configured and logged in to your OpenShift cluster.
+*   Familiarity with inspecting `ActiveMQArtemis` CRs.
+
+**Scenario:** You have an existing `ActiveMQArtemis` CR with some address settings, and you want to ensure it doesn't contain redundant default values.
+
+**Steps:**
+
+.1. **Examine a Hypothetical Default Setting:**
+    Let's assume that for the AMQ Broker version you are using, the default configuration for any address (`#`) includes `maxDeliveryAttempts` set to `10`. This is a common default for message redelivery attempts.
+
+.2. **Create an Initial `ActiveMQArtemis` CR with a Redundant Setting:**
+    Create a new file named `activemq-artemis-redundant.yaml` with the following content. This CR explicitly sets `maxDeliveryAttempts` to `10` for the `myAddress` pattern, which is our hypothetical default. We also include a custom `deadLetterAddress`.
+
+    [source,yaml]
+    ----
+    apiVersion: broker.amq.io/v1beta1
+    kind: ActiveMQArtemis
+    metadata:
+      name: mybroker-redundant
+    spec:
+      brokerProperties:
+        - "addressSettings.#.myAddress.maxDeliveryAttempts=10"
+        - "addressSettings.#.myAddress.deadLetterAddress=DLQ.myAddress"
+      deploymentPlan:
+        size: 1
+        image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+    ----
+
+    NOTE: In a real-world scenario, you would refer to the official AMQ Broker documentation for your specific version to find the actual default values for address settings. Here, `maxDeliveryAttempts=10` is used as an illustrative example of a default.
+
+.3. **Deploy the Broker with the Redundant Setting:**
+    Apply this CR to your OpenShift cluster.
+    ```bash
+    oc apply -f activemq-artemis-redundant.yaml
+    ```
+    Wait for the broker pod (e.g., `mybroker-redundant-ss-0`) to be running. You can check its status using `oc get pods -w`.
+
+.4. **Verify Applied Settings (Conceptual):**
+    While directly inspecting the merged runtime configuration of an address setting can be complex, conceptually, the broker will now have:
+    *   `maxDeliveryAttempts=10` for `myAddress` (from your explicit CR setting).
+    *   `deadLetterAddress=DLQ.myAddress` for `myAddress` (from your explicit CR setting).
+
+    Notice that `maxDeliveryAttempts=10` is redundant because it matches our assumed broker default. The broker's behavior would be identical even if this line were omitted.
+
+.5. **Create a Cleaned `ActiveMQArtemis` CR (Removing Redundancy):**
+    Now, create a new file named `activemq-artemis-clean.yaml`. In this CR, we remove the `maxDeliveryAttempts` setting because it matches the broker's default. We only specify `deadLetterAddress`, as that is a custom setting we want to enforce.
+
+    [source,yaml]
+    ----
+    apiVersion: broker.amq.io/v1beta1
+    kind: ActiveMQArtemis
+    metadata:
+      name: mybroker-clean
+    spec:
+      brokerProperties:
+        - "addressSettings.#.myAddress.deadLetterAddress=DLQ.myAddress"
+      deploymentPlan:
+        size: 1
+        image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+    ----
+
+.6. **Deploy the Cleaned Broker:**
+    Apply this new CR to deploy a separate broker instance.
+    ```bash
+    oc apply -f activemq-artemis-clean.yaml
+    ```
+    Wait for the `mybroker-clean-ss-0` pod to be running.
+
+.7. **Compare Configurations and Observe Best Practice:**
+    Both `mybroker-redundant` and `mybroker-clean` will result in identical runtime configurations for `myAddress`:
+
+    *   `maxDeliveryAttempts=10`:
+        *   In `mybroker-redundant`, this comes from the explicit setting in the CR.
+        *   In `mybroker-clean`, this comes from the broker's default configuration (because it was not overridden by the CR).
+    *   `deadLetterAddress=DLQ.myAddress`: This comes from the explicit setting in the CR for both brokers.
+
+    The `activemq-artemis-clean.yaml` configuration is preferred because it:
+    *   Is more concise and readable.
+    *   Clearly indicates which settings are truly custom and which are implicitly handled by defaults.
+    *   Allows the broker to automatically adopt any future changes to the `maxDeliveryAttempts` default value, if Red Hat updates it in a newer broker version, without requiring manual intervention in your CR.
+
+.8. **Clean Up:**
+    Delete the broker instances created during this activity.
+    ```bash
+    oc delete -f activemq-artemis-redundant.yaml
+    oc delete -f activemq-artemis-clean.yaml
+    ```
+    This activity demonstrates the value of avoiding redundant configuration entries, leading to cleaner, more maintainable, and future-proof broker deployments.

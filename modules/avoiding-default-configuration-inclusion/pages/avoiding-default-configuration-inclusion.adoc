@@ -1,0 +1,10 @@
+#  Avoiding Default Configuration Inclusion
+
+Address settings configuration for AMQ Broker on OpenShift involves carefully managing default properties. A core principle is to avoid including properties specified in the default configuration, even if they are not explicitly defined in the Custom Resource (CR).
+
+This behavior is influenced by the `applyRule` property:
+
+*   `merge_replace`: If properties exist in both the CR and the default configuration for matching addresses, only the CR's settings are included. Any default properties *not* specified in the CR are excluded from the final configuration.
+*   `replace_all`: This rule completely discards all default address settings, with the final configuration corresponding exactly to what is specified in the CR.
+
+Even with `merge_all` (the default `applyRule`), if a property is defined in both the CR and the default configuration, the CR's value will take precedence, effectively replacing the default. This ensures that the configuration prioritizes explicit CR definitions over implicit default settings.

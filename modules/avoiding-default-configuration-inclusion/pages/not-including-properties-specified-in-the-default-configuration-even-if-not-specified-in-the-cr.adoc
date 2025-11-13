@@ -1,0 +1,131 @@
+#  Not including properties specified in the default configuration, even if not specified in the CR
+
+= Avoiding Default Configuration Inclusion for Address Settings
+
+When configuring address settings for AMQ Broker on OpenShift, it's critical to understand how the Operator processes and merges your custom configurations with the broker's default settings. One specific behavior to be aware of is that properties defined in the default broker configuration might be *excluded* from an address's final settings, even if you haven't explicitly specified or overridden them in your Custom Resource (CR). This occurs depending on the `applyRule` you choose.
+
+== Understanding Default Configuration Exclusion
+
+The AMQ Broker Operator on OpenShift uses the `applyRule` property within address settings to dictate how it combines configurations from your `ActiveMQArtemis` or `ActiveMQArtemisAddress` CRs with the broker's intrinsic default settings. For certain `applyRule` values, properties that are part of the broker's default configuration will be omitted from the final configuration of a matching address if they are not explicitly defined in your CR for that specific address pattern.
+
+This behavior is primarily governed by the `merge_replace` and `replace_all` rules.
+
+=== The `merge_replace` Rule
+
+When the `applyRule` for an address setting is set to `merge_replace`, the Operator applies the following logic for addresses that match the specified pattern:
+
+*   For properties that are defined *both* in your CR and in the default broker configuration for the same matching address, the value specified in your CR will always take precedence.
+*   **Crucially, for properties that are present in the default configuration but are *not* explicitly specified in your CR for that matching address pattern, these properties will *not* be included in the final merged configuration.** Only properties explicitly defined in your CR for the matching address or properties uniquely defined in the default configuration for non-overlapping addresses will be considered.
+
+This means that if your broker has a global default setting for, for example, `maxDeliveryAttempts` (perhaps defaulting to `10`), but your `ActiveMQArtemisAddress` CR for `my.specific.queue` uses `merge_replace` and does *not* specify `maxDeliveryAttempts`, then `my.specific.queue` will *not* inherit the default `maxDeliveryAttempts` value. Instead, the `maxDeliveryAttempts` property will simply be absent from the configuration for `my.specific.queue`.
+
+=== The `replace_all` Rule
+
+The `replace_all` rule provides an even more absolute approach to configuration merging:
+
+*   When `applyRule` is set to `replace_all`, the Operator completely *disregards all* address settings from the default configuration for any address patterns that match your CR's definition.
+*   The resulting, final configuration for that matching address will correspond *exactly* to what you have specified in your CR.
+
+Therefore, if a property is not explicitly defined in your CR when `replace_all` is used, it will not be part of the configuration for the matching address, irrespective of whether a default value for that property exists elsewhere in the broker's configuration.
+
+=== Why This Behavior Is Important
+
+Understanding this default exclusion behavior is paramount for preventing unexpected operational characteristics of your broker. If you anticipate that an address should inherit a specific default property (e.g., a default `redeliveryDelay`) but configure that address using `merge_replace` or `replace_all` without explicitly defining that property in your CR, you might find that the property is entirely absent from the address's configuration. This could lead to different message handling or performance than you originally intended. Always be explicit about all desired properties when employing these `applyRule` values.
+
+== Hands-on Activity: Demonstrating Default Property Exclusion
+
+This activity will guide you through deploying an AMQ Broker instance and then configuring an address using `merge_replace` to illustrate how default properties, if not explicitly stated in the CR, are excluded from the address's final configuration.
+
+=== Prerequisites
+
+*   An OpenShift cluster with the AMQ Broker Operator installed and running.
+*   The `oc` command-line tool configured and authenticated to your OpenShift cluster.
+
+=== Steps
+
+.   **Log in to OpenShift:**
+    Ensure you are logged in to your OpenShift cluster and have selected the appropriate project where you intend to deploy the broker.
++
+[source,bash]
+----
+oc login -u developer -p developer
+oc project my-amq-broker-project # Replace with your actual project name
+----
+
+.   **Deploy a Basic AMQ Broker Instance:**
+    First, deploy a simple `ActiveMQArtemis` instance. For this activity, we will not include any custom address settings directly within this initial broker CR.
++
+[source,yaml,subs="attributes+"]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker-exclusion
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+    extraMounts:
+      - name: broker-config-volume
+        mountPath: /home/amq/broker/etc
+----
++
+Save the content above as `broker-exclusion.yaml` and apply it to your OpenShift cluster:
++
+[source,bash]
+----
+oc apply -f broker-exclusion.yaml
+----
++
+Wait for the broker pod to transition to a `Running` state. You can monitor its status with:
++
+[source,bash]
+----
+oc get pods -l app=my-broker-exclusion
+----
+
+.   **Create an `ActiveMQArtemisAddress` with `applyRule: merge_replace`:**
+    Next, we will define an address for the pattern `my.example.address.#` using an `ActiveMQArtemisAddress` Custom Resource. Crucially, we will set `applyRule` to `merge_replace` and *intentionally omit* a common address property that might have a default value within the broker, such as `redeliveryDelay`.
++
+[source,yaml,subs="attributes+"]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemisAddress
+metadata:
+  name: example-address-settings
+spec:
+  brokerName: my-broker-exclusion
+  addressName: my.example.address.#
+  applyRule: merge_replace
+  addressSettings:
+    - match: "my.example.address.#"
+      maxSizeBytes: 10485760 # Sets max size for this address pattern to 10MB
+      # We intentionally omit 'redeliveryDelay' here.
+      # If the broker has a default 'redeliveryDelay' for all addresses,
+      # it will NOT be applied to 'my.example.address.#' due to 'merge_replace',
+      # because it's not explicitly stated in this CR for a matching address.
+----
++
+Save this content as `address-exclusion.yaml` and apply it:
++
+[source,bash]
+----
+oc apply -f address-exclusion.yaml
+----
+
+.   **Verify the Broker's Configuration:**
+    While directly inspecting the broker's runtime configuration (e.g., via Jolokia or by examining `broker.xml` inside the pod) provides the most granular detail, for this lab, we will infer the outcome based on the `applyRule` and the CR definition.
+
+    *Expected Outcome:*
+    When the Operator applies the `address-exclusion.yaml` configuration for `my.example.address.#` with `applyRule: merge_replace`, only the `maxSizeBytes` property will be explicitly set to `10485760`. Any other address settings that the broker might typically apply by default (e.g., `redeliveryDelay`, `maxDeliveryAttempts`, `messageCounterHistoryDayLimit`) will *not* be present in the configuration for the `my.example.address.#` address pattern. This is because these properties were not explicitly specified in the `ActiveMQArtemisAddress` CR for this matching pattern, and `merge_replace` specifically excludes default properties for overlapping matches if they are not mentioned in the CR.
+
+.   **Clean Up (Optional):**
+    To remove the resources created during this activity, execute the following commands:
++
+[source,bash]
+----
+oc delete -f address-exclusion.yaml
+oc delete -f broker-exclusion.yaml
+----
+
+This hands-on activity illustrates that when using `merge_replace` (or `replace_all`), if you intend a specific address property to have a value (even a default one), you *must* explicitly define that property in your `ActiveMQArtemisAddress` or `ActiveMQArtemis` CR. Otherwise, it will be entirely excluded from the final configuration of the matching address.

@@ -1,0 +1,6 @@
+* xref:address-settings-configuration.adoc[]
+** xref:match-property.adoc[]
+** xref:enclosing-value-in-single-quotation-marks-for-example-myotheraddresses.adoc[]
+** xref:applyrule-property.adoc[]
+** xref:specifying-how-the-operator-applies-the-configuration.adoc[]
+** xref:example-merge_all.adoc[]

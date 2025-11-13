@@ -1,0 +1,167 @@
+#  Using brokerProperties attribute in ActiveMQArtemis CR instance
+
+This section details how to configure address settings for AMQ Broker deployments on OpenShift using the `brokerProperties` attribute within the `ActiveMQArtemis` Custom Resource (CR) instance. This method is particularly useful for configuring broker properties that are not directly exposed as dedicated fields in the `ActiveMQArtemis` CRD.
+
+[[configuring-address-settings-brokerproperties]]
+== Configuring Address Settings using `brokerProperties` in `ActiveMQArtemis` CR
+
+The `brokerProperties` attribute in the `ActiveMQArtemis` CR provides a flexible mechanism to apply advanced configurations to your AMQ Broker instance. When dealing with address settings, you can define them as part of a comma-separated string of `key=value` pairs within `brokerProperties`. This approach allows you to finely tune how messages are handled for specific addresses, including defining dead letter addresses, message expiry settings, and more.
+
+=== Understanding `brokerProperties` for Address Settings
+
+The `brokerProperties` attribute allows you to inject configurations directly into the underlying ActiveMQ Artemis broker's configuration. For address settings, you typically define blocks of configuration starting with `addressSettings.`.
+
+Each address setting block is identified by a unique key and contains properties that dictate the behavior of addresses matching a specified pattern.
+
+*   `addressSettings.<unique-key>.match`:
+    *   This property specifies the address pattern to which the settings apply. The value *must* be enclosed in single quotation marks (e.g., `'myAddresses#'`). This pattern can be a specific address name or a wildcard pattern (e.g., `*`, `#`).
+*   `addressSettings.<unique-key>.applyRule`:
+    *   This property dictates how the Operator applies the configuration when multiple address settings might overlap. Common values include:
+        *   `merge_all`: Merges all matching rules.
+        *   `replace`: Replaces existing rules.
+        *   `append`: Appends to existing rules.
+*   Other address setting properties:
+    *   Within the `brokerProperties`, you can specify various address properties such as `deadLetterAddress`, `deadLetterQueue`, `expiryAddress`, `expiryQueue`, `maxDeliveryAttempts`, `pageSizeBytes`, `messageCounterEnabled`, etc.
+
+[NOTE]
+====
+When using `brokerProperties`, you are directly manipulating the broker's core configuration. Ensure that the properties and their values are syntactically correct and adhere to the ActiveMQ Artemis configuration schema to avoid deployment failures.
+====
+
+=== Avoiding Default Configuration Inclusion and Overlapping Settings
+
+When configuring address settings through `brokerProperties`, keep the following in mind:
+
+*   **Default Configuration:** Do not include properties that are already specified in the broker's default configuration, even if you are not explicitly setting them in the CR. The Operator might implicitly apply default values.
+*   **Overlapping Settings:** Ensure that you do not include properties with the same value in both your `ActiveMQArtemis` CR (via `brokerProperties`) and any default entry or other configuration mechanisms. Duplication or conflicting definitions can lead to unpredictable behavior or configuration errors.
+*   **Unique Keys:** Each `addressSettings` block you define within `brokerProperties` must use a unique key (e.g., `addressSettings.mySpecificRule1`, `addressSettings.anotherPatternRule`).
+
+[IMPORTANT]
+====
+Reviewing the `status` section of your `ActiveMQArtemis` CR after applying changes is crucial. Any errors detected in the `brokerProperties` configuration will be reported there, providing valuable debugging information.
+====
+
+=== Example: Configuring Dead Letter Address and Queue for Specific Address Patterns
+
+Let's illustrate how to configure a dead letter address and queue for messages sent to addresses matching the pattern `my.special.addresses.#` using the `brokerProperties` attribute.
+
+In this example, messages that cannot be delivered to `my.special.addresses.#` will be routed to `myDeadLetterAddress` and stored in `myDeadLetterQueue`. We also set `maxDeliveryAttempts` to `3` before moving the message.
+
+```adoc
+spec:
+  # ... other ActiveMQArtemis CR properties
+  brokerProperties:
+    - addressSettings.mySpecialRule.match='my.special.addresses.#'
+    - addressSettings.mySpecialRule.applyRule=merge_all
+    - addressSettings.mySpecialRule.deadLetterAddress=myDeadLetterAddress
+    - addressSettings.mySpecialRule.deadLetterQueue=myDeadLetterQueue
+    - addressSettings.mySpecialRule.maxDeliveryAttempts=3
+    - addressSettings.mySpecialRule.messageCounterEnabled=true
+```
+
+[[hands-on-configuring-address-settings-brokerproperties]]
+== Hands-on Activity: Configuring Address Settings via `brokerProperties`
+
+In this lab, you will deploy an AMQ Broker instance on OpenShift and configure custom address settings using the `brokerProperties` attribute to handle undeliverable messages for a specific address pattern.
+
+=== Prerequisites
+
+*   Access to an OpenShift cluster.
+*   The AMQ Broker Operator installed in your OpenShift cluster. If not installed, refer to the official documentation for "Installing the Operator using the CLI".
+*   `oc` CLI tool configured to connect to your OpenShift cluster.
+
+=== Procedure
+
+.  **Log in to OpenShift**
+    Ensure you are logged into your OpenShift cluster and targeting the correct project:
+    ```bash
+    oc login -u <your_username> -p <your_password> --server=<openshift_api_url>
+    oc project <your_project_name>
+    ```
+    If you don't have a project, create one:
+    ```bash
+    oc new-project amq-broker-test
+    ```
+
+.  **Create an `ActiveMQArtemis` CR with `brokerProperties`**
+    Create a YAML file named `broker-with-address-settings.yaml` with the following content. This configuration deploys a single broker instance and defines address settings for patterns matching `order.#`. Undeliverable messages will go to `DLQ.orders`.
+
+    [source,yaml]
+    ----
+    apiVersion: broker.amq.io/v1beta1
+    kind: ActiveMQArtemis
+    metadata:
+      name: mybroker-with-address-settings
+    spec:
+      deploymentPlan:
+        size: 1
+        persistenceEnabled: false # For simplicity in this lab
+      brokerProperties:
+        - addressSettings.orderDeadLetter.match='order.#'
+        - addressSettings.orderDeadLetter.applyRule=merge_all
+        - addressSettings.orderDeadLetter.deadLetterAddress=DLQ.orders
+        - addressSettings.orderDeadLetter.deadLetterQueue=DLQ.orders
+        - addressSettings.orderDeadLetter.maxDeliveryAttempts=3
+        - addressSettings.orderDeadLetter.messageCounterEnabled=true
+        - addressSettings.orderDeadLetter.expiryAddress=Expiry.orders
+        - addressSettings.orderDeadLetter.expiryQueue=Expiry.orders
+      # Optional: To verify address properties are applied, you can enable Jolokia
+      # artemis:
+      #   jolokia:
+      #     enabled: true
+    ----
+
+.  **Deploy the `ActiveMQArtemis` instance**
+    Apply the CR to your OpenShift cluster:
+    ```bash
+    oc apply -f broker-with-address-settings.yaml
+    ```
+
+.  **Verify the deployment status**
+    Monitor the status of your `ActiveMQArtemis` instance and its pods:
+    ```bash
+    oc get activemqartemis mybroker-with-address-settings -o yaml
+    oc get pod -l app.kubernetes.io/name=mybroker-with-address-settings
+    ```
+    Check the `status` section of the `ActiveMQArtemis` CR for any errors related to `brokerProperties`. If everything is successful, the `status` will indicate that the broker is running, and no errors will be reported regarding the configuration.
+
+    You should see a status similar to this (excerpt):
+    [source,yaml]
+    ----
+    status:
+      ...
+      brokerPropertiesStatus:
+        errors: [] # This confirms no errors in brokerProperties
+        state: Applied
+      conditions:
+        - lastTransitionTime: "2023-10-27T10:00:00Z"
+          message: The broker is running
+          reason: BrokerRunning
+          status: "True"
+          type: Running
+      deploymentStatus:
+        readyReplicas: 1
+        replicas: 1
+      ...
+    ----
+
+.  **Access the broker (Optional: for advanced verification)**
+    If you enabled Jolokia in the CR (as commented out in the example), you could port-forward to the broker pod and use a tool like `curl` or a web browser to inspect the JMX MBeans and confirm the address settings. This step is beyond the scope of basic verification but provides deeper insight.
+
+    ```bash
+    # Get the broker pod name
+    BROKER_POD=$(oc get pod -l app.kubernetes.io/name=mybroker-with-address-settings -o jsonpath='{.items[0].metadata.name}')
+
+    # Port-forward to the pod
+    oc port-forward $BROKER_POD 8161:8161
+    ```
+    Then, in your browser, navigate to `http://localhost:8161/console/jolokia/` or use `curl` to query specific MBeans related to address settings.
+
+.  **Clean up**
+    Once you are finished, delete the `ActiveMQArtemis` instance:
+    ```bash
+    oc delete -f broker-with-address-settings.yaml
+    ```
+    This will remove the broker deployment and any associated resources.
+
+This hands-on activity demonstrates how to effectively use the `brokerProperties` attribute to apply custom address settings, providing granular control over message routing and behavior within your AMQ Broker deployment on OpenShift.

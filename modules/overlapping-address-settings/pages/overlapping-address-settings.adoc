@@ -1,0 +1,8 @@
+#  Overlapping Address Settings
+
+When configuring address settings for AMQ Broker on OpenShift, overlapping settings occur when properties with the same value exist in both the `ActiveMQArtemis CR` and the default configuration for a matching address or set of addresses. The `applyRule` property, set within the `addressSettings` section of the CR, dictates how the Operator resolves these overlaps.
+
+*   When `applyRule: merge_all`, properties in the default configuration are replaced by CR values for matching settings, while unique properties from either the CR or default are retained.
+*   When `applyRule: merge_replace`, only the settings specified in the CR are included for matching addresses, and any properties from the default configuration are explicitly excluded.
+
+It is important to understand the behavior of `applyRule` to ensure the desired configuration is applied.

@@ -1,0 +1,125 @@
+#  Using ActiveMQArtemisAddress CR instance
+
+This section details how to configure address settings for AMQ Broker on OpenShift when your addresses and queues are primarily managed using `ActiveMQArtemisAddress` Custom Resource (CR) instances. While the `ActiveMQArtemisAddress` CR defines the address and queue itself, the specific operational settings for these addresses, such as message expiry, dead letter configuration, or delivery attempts, are configured within the `ActiveMQArtemis` CR instance of your broker deployment.
+
+[[_using_activemqartemisaddress_cr_instance]]
+= Using ActiveMQArtemisAddress CR Instance for Address Settings
+
+When you utilize `ActiveMQArtemisAddress` CR instances to define individual addresses and queues, the corresponding address-specific configurations (known as address settings) are managed centrally in the `ActiveMQArtemis` CR. This allows for applying policies and behaviors to addresses, even if they are individually declared. The `addressSettings` section in the `ActiveMQArtemis` CR provides a powerful mechanism to define rules and properties that apply to single addresses or groups of addresses based on pattern matching.
+
+== Configuring Address Settings in ActiveMQArtemis CR
+
+To configure address settings when using `ActiveMQArtemisAddress` CR instances, you will modify the `ActiveMQArtemis` CR instance of your broker deployment. Within its `spec` section, you will define `addressSettings` that specify how the broker should behave for messages on certain addresses.
+
+[[_prerequisites_activemqartemisaddress_settings]]
+=== Prerequisites
+
+Before proceeding, ensure the following conditions are met:
+
+*   You have an AMQ Broker Operator installed and running on your OpenShift cluster.
+*   You have an `ActiveMQArtemis` broker instance deployed. For information on deploying a basic broker, see the documentation for "Deploying a basic broker instance."
+*   You have already created the necessary addresses and queues using `ActiveMQArtemisAddress` CR instances. For example, to configure a dead letter address and queue, you would first define them:
+
+.Example `ActiveMQArtemisAddress` CR for a dead letter destination
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemisAddress
+metadata:
+  name: my-dlq-address <1>
+spec:
+  addressName: myDeadLetterAddress <2>
+  queueName: myDeadLetterQueue <3>
+  routingType: anycast <4>
+----
+<1> A unique name for this `ActiveMQArtemisAddress` CR instance.
+<2> The logical name of the address this CR creates.
+<3> The name of the queue associated with this address.
+<4> The routing type for messages on this address (e.g., `anycast` or `multicast`).
+
+[[_procedure_configure_address_settings_activemqartemis_cr]]
+=== Procedure: Configure Address Settings using `addressSettings`
+
+Follow these steps to configure address settings within your `ActiveMQArtemis` CR:
+
+. **Edit the `ActiveMQArtemis` CR instance.**
++
+Use the `oc edit` command to modify your broker's CR:
++
+[source,bash]
+----
+oc edit activemqartemis <broker-instance-name> -n <namespace>
+----
++
+Replace `<broker-instance-name>` with the name of your `ActiveMQArtemis` instance and `<namespace>` with your OpenShift project.
+
+. **Define `addressSettings` in the `spec` section.**
++
+Within the `spec` section of the `ActiveMQArtemis` CR, add or update the `addressSettings` attribute. This attribute expects a list of configuration objects. Each object in the list contains settings for addresses that match a specified pattern.
+
+. **Configure dead letter address and queue settings (Example).**
++
+To illustrate, let's configure settings for a dead letter address and queue. This example sets a limit on delivery attempts before a message is moved to the dead letter queue previously defined by an `ActiveMQArtemisAddress` CR.
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker-instance
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker:7.10
+  addressSettings: <1>
+    - match: 'myDeadLetterAddress' <2>
+      applyRule: merge_all <3>
+      deadLetterAddress: myDeadLetterAddress <4>
+      deadLetterQueue: myDeadLetterQueue <5>
+      maxDeliveryAttempts: 3 <6>
+      redeliveryDelay: 5000 <7>
+      # ... other address settings ...
+  # ... other broker configurations ...
+----
+<1> The `addressSettings` attribute, a list under `spec`, where you define address-specific configurations.
+<2> The `match` property specifies the address pattern to which these settings apply. Its value *must be enclosed in single quotation marks* (e.g., `'myAddresses#'`). In this case, it matches the specific `myDeadLetterAddress` defined earlier.
+<3> The `applyRule` property determines how the Operator applies this configuration. `merge_all` combines these settings with any existing default settings, with the CR's values taking precedence. Other options like `override` completely replace defaults.
+<4> Specifies the address where messages are sent if they cannot be delivered successfully. This should match the `addressName` from your `ActiveMQArtemisAddress` CR.
+<5> Specifies the queue where undeliverable messages are stored. This should match the `queueName` from your `ActiveMQArtemisAddress` CR.
+<6> `maxDeliveryAttempts` sets the maximum number of times the broker will try to deliver a message before moving it to the `deadLetterQueue`.
+<7> `redeliveryDelay` specifies the delay (in milliseconds) before a message is redelivered after a failed attempt.
+
+. **Save the CR.**
++
+Save the changes to the `ActiveMQArtemis` CR. The AMQ Broker Operator will detect the update and apply the new address settings to your broker deployment.
+
+. **Verify the configuration status.**
++
+Check the `status` section of the `ActiveMQArtemis` CR to ensure that the configuration was applied without errors:
++
+[source,bash]
+----
+oc get activemqartemis <broker-instance-name> -o yaml -n <namespace>
+----
++
+Look for any warnings or errors in the `status` section that might indicate issues with the `addressSettings` configuration.
+
+== Address Settings Configuration Details
+
+When configuring `addressSettings` in the `ActiveMQArtemis` CR, consider the following properties and best practices:
+
+*   **`match` Property**: This property defines a pattern (often a regular expression) that determines which addresses an `addressSettings` entry applies to.
+    *   *Enclosing Value*: Always enclose the value of the `match` property in single quotation marks, for example, `match: 'myOtherAddresses#'`. This ensures that the pattern is correctly parsed by the Operator and the broker.
+    *   *Pattern Usage*: You can use wildcards (e.g., `#` for matching any descendant, `*` for matching any single level) to apply settings to groups of addresses.
+
+*   **`applyRule` Property**: This property specifies how the Operator applies the configuration entry in relation to any existing default settings.
+    *   *`merge_all`*: This is a commonly used rule. It instructs the Operator to merge the properties defined in this `addressSettings` entry with the broker's default address settings. If a property is specified in both this entry and the default, the value from the CR takes precedence.
+    *   *`override`*: This rule completely replaces the default address settings for the matching addresses with the properties defined in this entry. Use with caution, as it will ignore any default settings not explicitly redefined here.
+
+*   **Avoiding Default Configuration Inclusion**: It is generally not necessary to explicitly include properties that are already present in the broker's default configuration within your `addressSettings` unless you intend to change their default values. The broker automatically applies default values for any properties not specified in your custom configuration.
+
+*   **Overlapping Address Settings**: When defining multiple `addressSettings` entries or when custom settings interact with broker defaults, ensure that you avoid redundant or conflicting property definitions.
+    *   Do not include properties with the same value in both your `ActiveMQArtemis` CR `addressSettings` and any default entry sub-entry unless overriding is intended. While the Operator has precedence rules, explicit and clear configurations prevent unexpected behavior or debugging challenges.
+    *   If multiple `addressSettings` entries match an address pattern, the broker applies them in a defined order, typically with the most specific match taking precedence. However, it's best to design your `match` patterns to minimize ambiguity.
+
+By understanding and applying these configuration principles, you can effectively manage sophisticated address behaviors for your AMQ Broker deployments on OpenShift.

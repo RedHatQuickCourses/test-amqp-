@@ -1,0 +1,8 @@
+#  Configuring Address Settings
+
+Address settings define how an AMQ Broker handles messages for specific addresses. You can configure these settings using two primary methods:
+
+*   Through the `brokerProperties` attribute within the `ActiveMQArtemis` Custom Resource (CR) instance.
+*   In the `addressSettings` section of the `ActiveMQArtemis` CR, particularly when addresses are defined via `ActiveMQArtemisAddress` CRs.
+
+Key properties include the `match` property for specifying address criteria, where its value must be enclosed in single quotation marks (e.g., `'myOtherAddresses#'`). The `applyRule` property dictates how the Operator applies the configuration, such as `merge_all`. For example, you can configure dead letter addresses and queues for specific patterns to manage undeliverable messages. It is crucial to avoid including properties already specified in the default configuration.

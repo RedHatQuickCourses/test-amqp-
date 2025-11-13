@@ -1,6 +1,6 @@
 site:
-  title: FIXME Course Title
-  start_page: REPLACEREPONAME::index.adoc
+  title:  Address Settings for AMQ Broker on OpenShift
+  start_page: test-amqp-::index.adoc
 
 content:
   sources:

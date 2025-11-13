@@ -1,10 +1,16 @@
-name: REPLACEREPONAME
-title: FIXME Course Title
-version: 1
+name: test-amqp-
+title:  Address Settings for AMQ Broker on OpenShift
+version: 1.0.0
 nav:
 - modules/ROOT/nav.adoc
 - modules/LABENV/nav.adoc
-- modules/chapter1/nav.adoc
-- modules/chapter2/nav.adoc
-- modules/chapter3/nav.adoc
+
+- modules/configuring-address-settings/nav.adoc
+
+- modules/address-settings-configuration/nav.adoc
+
+- modules/avoiding-default-configuration-inclusion/nav.adoc
+
+- modules/overlapping-address-settings/nav.adoc
+
 - modules/appendix/nav.adoc

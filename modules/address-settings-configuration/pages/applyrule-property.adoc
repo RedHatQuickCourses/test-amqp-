@@ -1,0 +1,144 @@
+#  applyRule property
+
+The `applyRule` property is a crucial setting when configuring address settings for AMQ Broker instances on OpenShift using the ActiveMQArtemis Custom Resource (CR). It dictates how the OpenShift AMQ Broker Operator merges or replaces the default broker configuration with the custom address settings defined in your CR. This property ensures flexibility and control over how your specific broker settings interact with the broker's inherent defaults.
+
+### Technical Explanation
+
+The `applyRule` property is specified within the `addressSettings` section of the `ActiveMQArtemis` Custom Resource. It governs the reconciliation process performed by the Operator's Init Container, which processes both the default address settings configuration and the one specified in your CR.
+
+The primary function of `applyRule` is to determine the final address settings configuration that the broker will use, based on your CR's configuration and the broker's built-in defaults.
+
+You can specify two main values for the `applyRule` property: `merge_all` and `merge_replace`.
+
+#### `merge_all`
+
+When `applyRule` is set to `merge_all`, the Operator performs a comprehensive merge operation:
+
+*   **For overlapping properties:** If address settings specified in both the CR and the default configuration match the same address or set of addresses, any property values explicitly defined in the CR will replace their counterparts in the default configuration.
+*   **For unique properties:** Any property values that are specified *only* in the CR or *only* in the default configuration (and not in both for the same address match) will be included in the final, merged configuration.
+*   **For unique address matches:** If an address setting is specified uniquely in either the CR or the default configuration for a particular address or set of addresses, it will be included in the final, merged configuration.
+
+Essentially, `merge_all` ensures that your CR's explicit settings take precedence for overlapping properties, while also retaining all unique settings from both your CR and the default configuration. This provides a robust way to augment and override default behaviors without losing valuable default settings that you haven't explicitly redefined.
+
+#### `merge_replace`
+
+When `applyRule` is set to `merge_replace`, the Operator takes a more assertive approach:
+
+*   **For overlapping properties:** If address settings are specified in both the CR and the default configuration that match the same address or set of addresses, *only* the settings specified in the CR will be included in the final, merged configuration. The corresponding default configuration for those matching addresses will be entirely disregarded.
+*   **For unique properties/address matches:** The provided context primarily focuses on the overlapping case. Typically, in a "replace" scenario, any unique default configurations that do not have a corresponding override in the CR would *not* be included. This implies a CR-first approach where the CR defines the complete set of desired settings for matched addresses, overriding and discarding defaults. The provided documentation states "Do not include any property values that are specified uniquely in the default configuration." for `merge_replace`.
+
+This rule is useful when you want your Custom Resource to be the authoritative source for address settings for specific patterns, effectively discarding the default values for those patterns.
+
+#### Processing by the Init Container
+
+1.  When an `ActiveMQArtemis` CR is applied, the Operator's Init Container first processes the broker's default address settings configuration (which is typically generated into XML).
+2.  Next, it processes any address settings configurations you have specified in your CR and converts them to XML.
+3.  Based on the value of the `applyRule` property (`merge_all` or `merge_replace`) in your CR, the Init Container then merges or replaces the default configuration with your CR's configuration.
+4.  The result of this merge or replacement becomes the final address settings configuration that the broker will use. This configuration can be inspected in the `broker.xml` file, typically located in `/home/jboss/amq-broker/etc` for a running broker.
+
+### Hands-on Activity: Configuring `applyRule` for Address Settings
+
+In this activity, you will deploy an AMQ Broker instance and configure its address settings using the `applyRule` property in the `ActiveMQArtemis` Custom Resource. We'll use `merge_all` to demonstrate how custom settings override defaults while preserving others.
+
+#### Prerequisites
+
+*   An OpenShift cluster with the AMQ Broker Operator installed and running.
+*   `oc` CLI tool configured and logged into your OpenShift cluster.
+
+#### Step 1: Prepare your Project
+
+First, ensure you are in the correct OpenShift project (namespace) where you want to deploy the broker.
+
+```bash
+oc new-project amq-broker-applyrule-demo
+```
+
+#### Step 2: Create an `ActiveMQArtemis` Custom Resource with `applyRule: merge_all`
+
+We will create an `ActiveMQArtemis` CR that defines address settings for a pattern `myAddress` and `myOtherAddresses#`. We'll set `applyRule: merge_all` to see how it integrates with default settings (if any were present). For `myAddress`, we'll set a `maxDeliveryAttempts` and `deadLetterAddress`.
+
+Create a file named `amq-broker-applyrule.yaml` with the following content:
+
+```asciidoc
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: ex-broker-applyrule
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+  addressSettings:
+    applyRule: merge_all <1>
+    addressSetting:
+    - match: myAddress <2>
+      deadLetterAddress: myDeadLetterAddress
+      maxDeliveryAttempts: 5
+    - match: 'myOtherAddresses#' <3>
+      deadLetterAddress: myDeadLetterAddress
+      maxDeliveryAttempts: 3
+----
+<1> The `applyRule` property is set to `merge_all`, indicating that custom settings will override defaults, and unique settings from both sources will be retained.
+<2> Defines settings for a specific address named `myAddress`.
+<3> Defines settings for an address pattern matching `myOtherAddresses#`. Note the single quotes around the pattern.
+
+#### Step 3: Deploy the Broker Instance
+
+Apply the Custom Resource to your OpenShift cluster:
+
+```bash
+oc apply -f amq-broker-applyrule.yaml
+```
+
+Wait for the broker pod to be up and running. You can check its status:
+
+```bash
+oc get pods -l app=ex-broker-applyrule
+```
+
+#### Step 4: Inspect the Broker Configuration
+
+Once the broker pod is running, you can inspect the generated `broker.xml` file to verify how the `applyRule` property influenced the final address settings.
+
+1.  Get the name of your broker pod:
+    ```bash
+    BROKER_POD=$(oc get pods -l app=ex-broker-applyrule -o jsonpath='{.items[0].metadata.name}')
+    echo $BROKER_POD
+    ```
+
+2.  Copy the `broker.xml` file from the running pod to your local machine:
+    ```bash
+    oc cp $BROKER_POD:/home/jboss/amq-broker/etc/broker.xml ./broker.xml
+    ```
+
+3.  Open the `broker.xml` file (e.g., using `cat broker.xml` or a text editor) and search for the `<address-settings>` section.
+
+    You should find entries similar to these, reflecting your configured settings:
+
+    ```xml
+    <address-setting match="myAddress">
+       <dead-letter-address>myDeadLetterAddress</dead-letter-address>
+       <max-delivery-attempts>5</max-delivery-attempts>
+       <!-- ... other merged/default settings ... -->
+    </address-setting>
+    <address-setting match="myOtherAddresses#">
+       <dead-letter-address>myDeadLetterAddress</dead-letter-address>
+       <max-delivery-attempts>3</max-delivery-attempts>
+       <!-- ... other merged/default settings ... -->
+    </address-setting>
+    ```
+
+    You would also observe any default settings that were not explicitly overridden by your CR still being present, demonstrating the `merge_all` behavior.
+
+#### Step 5: Clean Up
+
+To remove the broker instance and related resources:
+
+```bash
+oc delete -f amq-broker-applyrule.yaml
+oc delete project amq-broker-applyrule-demo
+```
+
+This activity demonstrates how to leverage the `applyRule` property with `merge_all` to precisely control your AMQ Broker's address settings, allowing you to customize specific aspects while retaining the broader default configuration where desired. For scenarios requiring a complete override, `merge_replace` would be used.

@@ -1,0 +1,157 @@
+#  Example: merge_all
+
+This section demonstrates how to use the `merge_all` value for the `applyRule` property within AMQ Broker's address settings on OpenShift. The `merge_all` rule provides a flexible approach to combining address configurations defined in your `ActiveMQArtemis` Custom Resource (CR) instance with the broker's default settings.
+
+=== Example: Understanding `applyRule: merge_all`
+
+The `applyRule` property dictates how the OpenShift Operator applies the address settings defined in your `ActiveMQArtemis` CR for a specific address or set of addresses. When `applyRule` is set to `merge_all`, the Operator intelligently combines your CR's configuration with the broker's existing default settings.
+
+The behavior of `merge_all` is as follows:
+
+*   **Overlapping Properties**: For any address settings property that is defined in *both* your CR and the default configuration (and matches the same address or address pattern):
+    *   The property value specified in your CR *replaces* the corresponding value from the default configuration.
+*   **Unique Properties**: For any address settings property that is specified *uniquely* in either your CR *or* the default configuration (for the matching address or pattern):
+    *   That unique property value is retained and included in the final, merged configuration.
+*   **Unique Address Matches**: For address settings defined in either the CR or the default configuration that *uniquely* match a particular address or set of addresses (i.e., there's no corresponding match in the other source):
+    *   These unique address settings are included entirely in the final, merged configuration.
+
+Essentially, `merge_all` prioritizes CR-defined values for overlapping properties but ensures that no useful settings from either source are lost if they are unique. It aims to create a comprehensive configuration by combining all relevant properties.
+
+[NOTE]
+If you do not explicitly include the `applyRule` property in your `ActiveMQArtemis` CR, the Operator uses `merge_all` as the default value.
+
+==== Hands-on Activity: Configuring Address Settings with `merge_all`
+
+In this activity, you will deploy an AMQ Broker instance and configure address settings using the `merge_all` rule. We'll simulate a scenario where default broker settings exist, and we want to augment or override specific properties with our CR definition.
+
+Assume a hypothetical default configuration for an address pattern `myAddress#` that includes `maxDeliveryAttempts` and `redeliveryDelay`, and a default `deadLetterAddress`.
+
+===== Prerequisites
+
+*   An OpenShift cluster with `oc` CLI configured.
+*   The AMQ Broker Operator installed on the cluster.
+*   Basic understanding of OpenShift Custom Resources.
+
+===== Steps
+
+.1. **Examine the Hypothetical Default Broker Configuration**
+
+Imagine the AMQ Broker's default configuration includes the following settings for addresses matching `myAddress#`:
+
+[source,xml]
+----
+<configuration>
+   <address-settings>
+      <address-setting match="myAddress#">
+         <max-delivery-attempts>5</max-delivery-attempts>
+         <redelivery-delay>1000</redelivery-delay>
+         <dead-letter-address>DLQ.DEFAULT</dead-letter-address>
+         <last-value-queue>false</last-value-queue> <1>
+      </address-setting>
+      <address-setting match="anotherAddress#">
+         <max-size-bytes>10485760</max-size-bytes>
+         <message-counter-history-day-limit>7</message-counter-history-day-limit>
+      </address-setting>
+   </address-settings>
+</configuration>
+----
+<1> This property `last-value-queue` is unique to the default for `myAddress#`.
+
+.2. **Create an `ActiveMQArtemis` CR with `merge_all` Address Settings**
+
+You will create an `ActiveMQArtemis` CR named `my-broker-with-merged-settings`. This CR will define address settings for `myAddress#` and `newAddress#`.
+
+For `myAddress#`:
+*   We'll *override* `maxDeliveryAttempts` and `redeliveryDelay`.
+*   We'll *add* a unique property `maxSizeBytes`.
+
+For `newAddress#`:
+*   We'll define entirely new settings as this pattern is not in our hypothetical default.
+
+Create a file named `broker-merged-config.yaml` with the following content:
+
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker-with-merged-settings
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:latest
+  addressSettings:
+    - match: myAddress#
+      applyRule: merge_all
+      maxDeliveryAttempts: 10 # Overwrites default (5 -> 10)
+      redeliveryDelay: 500    # Overwrites default (1000 -> 500)
+      maxSizeBytes: 20971520  # Unique to CR for this match
+    - match: newAddress#
+      applyRule: merge_all    # Can be omitted, as merge_all is default
+      redeliveryDelay: 2000
+      expiryDelay: -1
+----
+
+.3. **Deploy the Broker Instance**
+
+Apply the CR to your OpenShift cluster:
+
+[source,bash]
+----
+oc apply -f broker-merged-config.yaml
+----
+
+Verify that the broker pod is running:
+
+[source,bash]
+----
+oc get pods -l app=my-broker-with-merged-settings
+----
+
+.4. **Verify the Merged Configuration**
+
+Once the broker is running, you can connect to the broker pod to inspect its live configuration. The AMQ Broker's configuration typically resides in `/home/jboss/amq-broker/broker.xml`.
+
+Connect to the broker pod:
+
+[source,bash]
+----
+oc rsh <broker-pod-name>
+----
+
+Navigate to the configuration directory and view the `broker.xml` file:
+
+[source,bash]
+----
+cd /home/jboss/amq-broker/etc/
+cat broker.xml | grep -A 10 -B 1 "<address-setting match=\"myAddress#\">"
+cat broker.xml | grep -A 10 -B 1 "<address-setting match=\"newAddress#\">"
+cat broker.xml | grep -A 10 -B 1 "<address-setting match=\"anotherAddress#\">"
+----
+
+You should observe the following in the `broker.xml` file (or similar structure):
+
+*   **For `myAddress#`**:
+    *   `max-delivery-attempts` will be `10` (from CR).
+    *   `redelivery-delay` will be `500` (from CR).
+    *   `dead-letter-address` will be `DLQ.DEFAULT` (from default, as it was not overridden by the CR).
+    *   `last-value-queue` will be `false` (from default, as it was not overridden by the CR).
+    *   `max-size-bytes` will be `20971520` (from CR, as it was unique to the CR for this match).
+    This demonstrates how `merge_all` combines properties, prioritizing CR values for overlaps and including unique properties from both sources.
+
+*   **For `newAddress#`**:
+    *   You will see the settings `redelivery-delay` and `expiry-delay` as defined in your CR, as this pattern was unique to the CR.
+
+*   **For `anotherAddress#`**:
+    *   You will still see `max-size-bytes` and `message-counter-history-day-limit` from the hypothetical default, as this pattern was unique to the default and not addressed by the CR.
+
+This confirms that the `merge_all` rule successfully combined the CR-defined settings with the broker's underlying default configuration, applying overrides where specified in the CR and retaining unique properties from both.
+
+===== Cleanup
+
+Delete the broker instance:
+
+[source,bash]
+----
+oc delete -f broker-merged-config.yaml
+----
