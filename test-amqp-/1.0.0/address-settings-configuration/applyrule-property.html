@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>applyRule property :: Address Settings for AMQ Broker on OpenShift</title>
+    <link rel="prev" href="enclosing-value-in-single-quotation-marks-for-example-myotheraddresses.html">
+    <link rel="next" href="specifying-how-the-operator-applies-the-configuration.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Address Settings for AMQ Broker on OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="test-amqp-" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../configuring-address-settings/configuring-address-settings.html">Configuring Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/using-brokerproperties-attribute-in-activemqartemis-cr-instance.html">Using brokerProperties attribute in ActiveMQArtemis CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/configuring-address-settings-under-brokerproperties.html">Configuring address settings under brokerProperties</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/using-activemqartemisaddress-cr-instance.html">Using ActiveMQArtemisAddress CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/configuring-address-settings-in-addresssettings-section-of-activemqartemis-cr.html">Configuring address settings in addressSettings section of ActiveMQArtemis CR</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="address-settings-configuration.html">Address Settings Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="match-property.html">match property</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="enclosing-value-in-single-quotation-marks-for-example-myotheraddresses.html">Enclosing value in single quotation marks, for example, myOtherAddresses#</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="applyrule-property.html">applyRule property</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="specifying-how-the-operator-applies-the-configuration.html">Specifying how the Operator applies the configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="example-merge_all.html">Example: merge_all</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/avoiding-default-configuration-inclusion.html">Avoiding Default Configuration Inclusion</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/not-including-properties-specified-in-the-default-configuration-even-if-not-specified-in-the-cr.html">Not including properties specified in the default configuration, even if not specified in the CR</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../overlapping-address-settings/overlapping-address-settings.html">Overlapping Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../overlapping-address-settings/ensuring-not-to-include-properties-with-the-same-value-in-both-cr-and-default-entry-sub-entry.html">Ensuring not to include properties with the same value in both CR and default Entry Sub-entry</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/appendix.html">Appendix</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Address Settings for AMQ Broker on OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Address Settings for AMQ Broker on OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></li>
+    <li><a href="address-settings-configuration.html">Address Settings Configuration</a></li>
+    <li><a href="applyrule-property.html">applyRule property</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">applyRule property</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>applyRule</code> property is a crucial setting when configuring address settings for AMQ Broker instances on OpenShift using the ActiveMQArtemis Custom Resource (CR). It dictates how the OpenShift AMQ Broker Operator merges or replaces the default broker configuration with the custom address settings defined in your CR. This property ensures flexibility and control over how your specific broker settings interact with the broker&#8217;s inherent defaults.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_technical_explanation"><a class="anchor" href="#_technical_explanation"></a>Technical Explanation</h3>
+<div class="paragraph">
+<p>The <code>applyRule</code> property is specified within the <code>addressSettings</code> section of the <code>ActiveMQArtemis</code> Custom Resource. It governs the reconciliation process performed by the Operator&#8217;s Init Container, which processes both the default address settings configuration and the one specified in your CR.</p>
+</div>
+<div class="paragraph">
+<p>The primary function of <code>applyRule</code> is to determine the final address settings configuration that the broker will use, based on your CR&#8217;s configuration and the broker&#8217;s built-in defaults.</p>
+</div>
+<div class="paragraph">
+<p>You can specify two main values for the <code>applyRule</code> property: <code>merge_all</code> and <code>merge_replace</code>.</p>
+</div>
+<div class="sect3">
+<h4 id="_merge_all"><a class="anchor" href="#_merge_all"></a><code>merge_all</code></h4>
+<div class="paragraph">
+<p>When <code>applyRule</code> is set to <code>merge_all</code>, the Operator performs a comprehensive merge operation:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>For overlapping properties:</strong> If address settings specified in both the CR and the default configuration match the same address or set of addresses, any property values explicitly defined in the CR will replace their counterparts in the default configuration.</p>
+</li>
+<li>
+<p><strong>For unique properties:</strong> Any property values that are specified <strong>only</strong> in the CR or <strong>only</strong> in the default configuration (and not in both for the same address match) will be included in the final, merged configuration.</p>
+</li>
+<li>
+<p><strong>For unique address matches:</strong> If an address setting is specified uniquely in either the CR or the default configuration for a particular address or set of addresses, it will be included in the final, merged configuration.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Essentially, <code>merge_all</code> ensures that your CR&#8217;s explicit settings take precedence for overlapping properties, while also retaining all unique settings from both your CR and the default configuration. This provides a robust way to augment and override default behaviors without losing valuable default settings that you haven&#8217;t explicitly redefined.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_merge_replace"><a class="anchor" href="#_merge_replace"></a><code>merge_replace</code></h4>
+<div class="paragraph">
+<p>When <code>applyRule</code> is set to <code>merge_replace</code>, the Operator takes a more assertive approach:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>For overlapping properties:</strong> If address settings are specified in both the CR and the default configuration that match the same address or set of addresses, <strong>only</strong> the settings specified in the CR will be included in the final, merged configuration. The corresponding default configuration for those matching addresses will be entirely disregarded.</p>
+</li>
+<li>
+<p><strong>For unique properties/address matches:</strong> The provided context primarily focuses on the overlapping case. Typically, in a "replace" scenario, any unique default configurations that do not have a corresponding override in the CR would <strong>not</strong> be included. This implies a CR-first approach where the CR defines the complete set of desired settings for matched addresses, overriding and discarding defaults. The provided documentation states "Do not include any property values that are specified uniquely in the default configuration." for <code>merge_replace</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This rule is useful when you want your Custom Resource to be the authoritative source for address settings for specific patterns, effectively discarding the default values for those patterns.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_processing_by_the_init_container"><a class="anchor" href="#_processing_by_the_init_container"></a>Processing by the Init Container</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>When an <code>ActiveMQArtemis</code> CR is applied, the Operator&#8217;s Init Container first processes the broker&#8217;s default address settings configuration (which is typically generated into XML).</p>
+</li>
+<li>
+<p>Next, it processes any address settings configurations you have specified in your CR and converts them to XML.</p>
+</li>
+<li>
+<p>Based on the value of the <code>applyRule</code> property (<code>merge_all</code> or <code>merge_replace</code>) in your CR, the Init Container then merges or replaces the default configuration with your CR&#8217;s configuration.</p>
+</li>
+<li>
+<p>The result of this merge or replacement becomes the final address settings configuration that the broker will use. This configuration can be inspected in the <code>broker.xml</code> file, typically located in <code>/home/jboss/amq-broker/etc</code> for a running broker.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_configuring_applyrule_for_address_settings"><a class="anchor" href="#_hands_on_activity_configuring_applyrule_for_address_settings"></a>Hands-on Activity: Configuring <code>applyRule</code> for Address Settings</h3>
+<div class="paragraph">
+<p>In this activity, you will deploy an AMQ Broker instance and configure its address settings using the <code>applyRule</code> property in the <code>ActiveMQArtemis</code> Custom Resource. We&#8217;ll use <code>merge_all</code> to demonstrate how custom settings override defaults while preserving others.</p>
+</div>
+<div class="sect3">
+<h4 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>An OpenShift cluster with the AMQ Broker Operator installed and running.</p>
+</li>
+<li>
+<p><code>oc</code> CLI tool configured and logged into your OpenShift cluster.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_1_prepare_your_project"><a class="anchor" href="#_step_1_prepare_your_project"></a>Step 1: Prepare your Project</h4>
+<div class="paragraph">
+<p>First, ensure you are in the correct OpenShift project (namespace) where you want to deploy the broker.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc new-project amq-broker-applyrule-demo</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_2_create_an_activemqartemis_custom_resource_with_applyrule_merge_all"><a class="anchor" href="#_step_2_create_an_activemqartemis_custom_resource_with_applyrule_merge_all"></a>Step 2: Create an <code>ActiveMQArtemis</code> Custom Resource with <code>applyRule: merge_all</code></h4>
+<div class="paragraph">
+<p>We will create an <code>ActiveMQArtemis</code> CR that defines address settings for a pattern <code>myAddress</code> and <code>myOtherAddresses#</code>. We&#8217;ll set <code>applyRule: merge_all</code> to see how it integrates with default settings (if any were present). For <code>myAddress</code>, we&#8217;ll set a <code>maxDeliveryAttempts</code> and <code>deadLetterAddress</code>.</p>
+</div>
+<div class="paragraph">
+<p>Create a file named <code>amq-broker-applyrule.yaml</code> with the following content:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-asciidoc hljs" data-lang="asciidoc">[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: ex-broker-applyrule
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+  addressSettings:
+    applyRule: merge_all <i class="conum" data-value="1"></i><b>(1)</b>
+    addressSetting:
+    - match: myAddress <i class="conum" data-value="2"></i><b>(2)</b>
+      deadLetterAddress: myDeadLetterAddress
+      maxDeliveryAttempts: 5
+    - match: 'myOtherAddresses#' <i class="conum" data-value="3"></i><b>(3)</b>
+      deadLetterAddress: myDeadLetterAddress
+      maxDeliveryAttempts: 3
+----
+&lt;1&gt; The `applyRule` property is set to `merge_all`, indicating that custom settings will override defaults, and unique settings from both sources will be retained.
+&lt;2&gt; Defines settings for a specific address named `myAddress`.
+&lt;3&gt; Defines settings for an address pattern matching `myOtherAddresses#`. Note the single quotes around the pattern.
+
+#### Step 3: Deploy the Broker Instance
+
+Apply the Custom Resource to your OpenShift cluster:
+
+```bash
+oc apply -f amq-broker-applyrule.yaml</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Wait for the broker pod to be up and running. You can check its status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc get pods -l app=ex-broker-applyrule</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_4_inspect_the_broker_configuration"><a class="anchor" href="#_step_4_inspect_the_broker_configuration"></a>Step 4: Inspect the Broker Configuration</h4>
+<div class="paragraph">
+<p>Once the broker pod is running, you can inspect the generated <code>broker.xml</code> file to verify how the <code>applyRule</code> property influenced the final address settings.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Get the name of your broker pod:
+<code><code>bash
+BROKER_POD=$(oc get pods -l app=ex-broker-applyrule -o jsonpath='{.items[0].metadata.name}')
+echo $BROKER_POD
+</code></code></p>
+</li>
+<li>
+<p>Copy the <code>broker.xml</code> file from the running pod to your local machine:
+<code><code>bash
+oc cp $BROKER_POD:/home/jboss/amq-broker/etc/broker.xml ./broker.xml
+</code></code></p>
+</li>
+<li>
+<p>Open the <code>broker.xml</code> file (e.g., using <code>cat broker.xml</code> or a text editor) and search for the <code>&lt;address-settings&gt;</code> section.</p>
+<div class="literalblock">
+<div class="content">
+<pre>You should find entries similar to these, reflecting your configured settings:</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>```xml
+&lt;address-setting match="myAddress"&gt;
+   &lt;dead-letter-address&gt;myDeadLetterAddress&lt;/dead-letter-address&gt;
+   &lt;max-delivery-attempts&gt;5&lt;/max-delivery-attempts&gt;
+   &lt;!-- ... other merged/default settings ... --&gt;
+&lt;/address-setting&gt;
+&lt;address-setting match="myOtherAddresses#"&gt;
+   &lt;dead-letter-address&gt;myDeadLetterAddress&lt;/dead-letter-address&gt;
+   &lt;max-delivery-attempts&gt;3&lt;/max-delivery-attempts&gt;
+   &lt;!-- ... other merged/default settings ... --&gt;
+&lt;/address-setting&gt;
+```</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>You would also observe any default settings that were not explicitly overridden by your CR still being present, demonstrating the `merge_all` behavior.</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_5_clean_up"><a class="anchor" href="#_step_5_clean_up"></a>Step 5: Clean Up</h4>
+<div class="paragraph">
+<p>To remove the broker instance and related resources:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash">oc delete -f amq-broker-applyrule.yaml
+oc delete project amq-broker-applyrule-demo</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This activity demonstrates how to leverage the <code>applyRule</code> property with <code>merge_all</code> to precisely control your AMQ Broker&#8217;s address settings, allowing you to customize specific aspects while retaining the broader default configuration where desired. For scenarios requiring a complete override, <code>merge_replace</code> would be used.</p>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="enclosing-value-in-single-quotation-marks-for-example-myotheraddresses.html">Enclosing value in single quotation marks, for example, myOtherAddresses#</a></span>
+  <span class="next"><a href="specifying-how-the-operator-applies-the-configuration.html">Specifying how the Operator applies the configuration</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

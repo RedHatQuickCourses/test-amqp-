@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Using brokerProperties attribute in ActiveMQArtemis CR instance :: Address Settings for AMQ Broker on OpenShift</title>
+    <link rel="prev" href="configuring-address-settings.html">
+    <link rel="next" href="configuring-address-settings-under-brokerproperties.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Address Settings for AMQ Broker on OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="test-amqp-" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="configuring-address-settings.html">Configuring Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="using-brokerproperties-attribute-in-activemqartemis-cr-instance.html">Using brokerProperties attribute in ActiveMQArtemis CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-address-settings-under-brokerproperties.html">Configuring address settings under brokerProperties</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="using-activemqartemisaddress-cr-instance.html">Using ActiveMQArtemisAddress CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-address-settings-in-addresssettings-section-of-activemqartemis-cr.html">Configuring address settings in addressSettings section of ActiveMQArtemis CR</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../address-settings-configuration/address-settings-configuration.html">Address Settings Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/match-property.html">match property</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/enclosing-value-in-single-quotation-marks-for-example-myotheraddresses.html">Enclosing value in single quotation marks, for example, myOtherAddresses#</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/applyrule-property.html">applyRule property</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/specifying-how-the-operator-applies-the-configuration.html">Specifying how the Operator applies the configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/example-merge_all.html">Example: merge_all</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/avoiding-default-configuration-inclusion.html">Avoiding Default Configuration Inclusion</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/not-including-properties-specified-in-the-default-configuration-even-if-not-specified-in-the-cr.html">Not including properties specified in the default configuration, even if not specified in the CR</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../overlapping-address-settings/overlapping-address-settings.html">Overlapping Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../overlapping-address-settings/ensuring-not-to-include-properties-with-the-same-value-in-both-cr-and-default-entry-sub-entry.html">Ensuring not to include properties with the same value in both CR and default Entry Sub-entry</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/appendix.html">Appendix</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Address Settings for AMQ Broker on OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Address Settings for AMQ Broker on OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></li>
+    <li><a href="configuring-address-settings.html">Configuring Address Settings</a></li>
+    <li><a href="using-brokerproperties-attribute-in-activemqartemis-cr-instance.html">Using brokerProperties attribute in ActiveMQArtemis CR instance</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Using brokerProperties attribute in ActiveMQArtemis CR instance</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section details how to configure address settings for AMQ Broker deployments on OpenShift using the <code>brokerProperties</code> attribute within the <code>ActiveMQArtemis</code> Custom Resource (CR) instance. This method is particularly useful for configuring broker properties that are not directly exposed as dedicated fields in the <code>ActiveMQArtemis</code> CRD.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="configuring-address-settings-brokerproperties"><a class="anchor" href="#configuring-address-settings-brokerproperties"></a>Configuring Address Settings using <code>brokerProperties</code> in <code>ActiveMQArtemis</code> CR</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>brokerProperties</code> attribute in the <code>ActiveMQArtemis</code> CR provides a flexible mechanism to apply advanced configurations to your AMQ Broker instance. When dealing with address settings, you can define them as part of a comma-separated string of <code>key=value</code> pairs within <code>brokerProperties</code>. This approach allows you to finely tune how messages are handled for specific addresses, including defining dead letter addresses, message expiry settings, and more.</p>
+</div>
+<div class="sect2">
+<h3 id="_understanding_brokerproperties_for_address_settings"><a class="anchor" href="#_understanding_brokerproperties_for_address_settings"></a>Understanding <code>brokerProperties</code> for Address Settings</h3>
+<div class="paragraph">
+<p>The <code>brokerProperties</code> attribute allows you to inject configurations directly into the underlying ActiveMQ Artemis broker&#8217;s configuration. For address settings, you typically define blocks of configuration starting with <code>addressSettings.</code>.</p>
+</div>
+<div class="paragraph">
+<p>Each address setting block is identified by a unique key and contains properties that dictate the behavior of addresses matching a specified pattern.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>addressSettings.&lt;unique-key&gt;.match</code>:</p>
+</li>
+<li>
+<p>This property specifies the address pattern to which the settings apply. The value <strong>must</strong> be enclosed in single quotation marks (e.g., <code>'myAddresses#'</code>). This pattern can be a specific address name or a wildcard pattern (e.g., <code>*</code>, <code>#</code>).</p>
+</li>
+<li>
+<p><code>addressSettings.&lt;unique-key&gt;.applyRule</code>:</p>
+</li>
+<li>
+<p>This property dictates how the Operator applies the configuration when multiple address settings might overlap. Common values include:</p>
+</li>
+<li>
+<p><code>merge_all</code>: Merges all matching rules.</p>
+</li>
+<li>
+<p><code>replace</code>: Replaces existing rules.</p>
+</li>
+<li>
+<p><code>append</code>: Appends to existing rules.</p>
+</li>
+<li>
+<p>Other address setting properties:</p>
+</li>
+<li>
+<p>Within the <code>brokerProperties</code>, you can specify various address properties such as <code>deadLetterAddress</code>, <code>deadLetterQueue</code>, <code>expiryAddress</code>, <code>expiryQueue</code>, <code>maxDeliveryAttempts</code>, <code>pageSizeBytes</code>, <code>messageCounterEnabled</code>, etc.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>When using <code>brokerProperties</code>, you are directly manipulating the broker&#8217;s core configuration. Ensure that the properties and their values are syntactically correct and adhere to the ActiveMQ Artemis configuration schema to avoid deployment failures.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_avoiding_default_configuration_inclusion_and_overlapping_settings"><a class="anchor" href="#_avoiding_default_configuration_inclusion_and_overlapping_settings"></a>Avoiding Default Configuration Inclusion and Overlapping Settings</h3>
+<div class="paragraph">
+<p>When configuring address settings through <code>brokerProperties</code>, keep the following in mind:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Default Configuration:</strong> Do not include properties that are already specified in the broker&#8217;s default configuration, even if you are not explicitly setting them in the CR. The Operator might implicitly apply default values.</p>
+</li>
+<li>
+<p><strong>Overlapping Settings:</strong> Ensure that you do not include properties with the same value in both your <code>ActiveMQArtemis</code> CR (via <code>brokerProperties</code>) and any default entry or other configuration mechanisms. Duplication or conflicting definitions can lead to unpredictable behavior or configuration errors.</p>
+</li>
+<li>
+<p><strong>Unique Keys:</strong> Each <code>addressSettings</code> block you define within <code>brokerProperties</code> must use a unique key (e.g., <code>addressSettings.mySpecificRule1</code>, <code>addressSettings.anotherPatternRule</code>).</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Reviewing the <code>status</code> section of your <code>ActiveMQArtemis</code> CR after applying changes is crucial. Any errors detected in the <code>brokerProperties</code> configuration will be reported there, providing valuable debugging information.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_configuring_dead_letter_address_and_queue_for_specific_address_patterns"><a class="anchor" href="#_example_configuring_dead_letter_address_and_queue_for_specific_address_patterns"></a>Example: Configuring Dead Letter Address and Queue for Specific Address Patterns</h3>
+<div class="paragraph">
+<p>Let&#8217;s illustrate how to configure a dead letter address and queue for messages sent to addresses matching the pattern <code>my.special.addresses.#</code> using the <code>brokerProperties</code> attribute.</p>
+</div>
+<div class="paragraph">
+<p>In this example, messages that cannot be delivered to <code>my.special.addresses.#</code> will be routed to <code>myDeadLetterAddress</code> and stored in <code>myDeadLetterQueue</code>. We also set <code>maxDeliveryAttempts</code> to <code>3</code> before moving the message.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-adoc hljs" data-lang="adoc">spec:
+  # ... other ActiveMQArtemis CR properties
+  brokerProperties:
+    - addressSettings.mySpecialRule.match='my.special.addresses.#'
+    - addressSettings.mySpecialRule.applyRule=merge_all
+    - addressSettings.mySpecialRule.deadLetterAddress=myDeadLetterAddress
+    - addressSettings.mySpecialRule.deadLetterQueue=myDeadLetterQueue
+    - addressSettings.mySpecialRule.maxDeliveryAttempts=3
+    - addressSettings.mySpecialRule.messageCounterEnabled=true</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="hands-on-configuring-address-settings-brokerproperties"><a class="anchor" href="#hands-on-configuring-address-settings-brokerproperties"></a>Hands-on Activity: Configuring Address Settings via <code>brokerProperties</code></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this lab, you will deploy an AMQ Broker instance on OpenShift and configure custom address settings using the <code>brokerProperties</code> attribute to handle undeliverable messages for a specific address pattern.</p>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Access to an OpenShift cluster.</p>
+</li>
+<li>
+<p>The AMQ Broker Operator installed in your OpenShift cluster. If not installed, refer to the official documentation for "Installing the Operator using the CLI".</p>
+</li>
+<li>
+<p><code>oc</code> CLI tool configured to connect to your OpenShift cluster.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Log in to OpenShift</strong>
+Ensure you are logged into your OpenShift cluster and targeting the correct project:
+<code><code>bash
+oc login -u &lt;your_username&gt; -p &lt;your_password&gt; --server=&lt;openshift_api_url&gt;
+oc project &lt;your_project_name&gt;
+</code></code>
+If you don&#8217;t have a project, create one:
+<code><code>bash
+oc new-project amq-broker-test
+</code></code></p>
+</li>
+<li>
+<p><strong>Create an <code>ActiveMQArtemis</code> CR with <code>brokerProperties</code></strong>
+Create a YAML file named <code>broker-with-address-settings.yaml</code> with the following content. This configuration deploys a single broker instance and defines address settings for patterns matching <code>order.#</code>. Undeliverable messages will go to <code>DLQ.orders</code>.</p>
+<div class="literalblock">
+<div class="content">
+<pre>[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: mybroker-with-address-settings
+spec:
+  deploymentPlan:
+    size: 1
+    persistenceEnabled: false # For simplicity in this lab
+  brokerProperties:
+    - addressSettings.orderDeadLetter.match='order.#'
+    - addressSettings.orderDeadLetter.applyRule=merge_all
+    - addressSettings.orderDeadLetter.deadLetterAddress=DLQ.orders
+    - addressSettings.orderDeadLetter.deadLetterQueue=DLQ.orders
+    - addressSettings.orderDeadLetter.maxDeliveryAttempts=3
+    - addressSettings.orderDeadLetter.messageCounterEnabled=true
+    - addressSettings.orderDeadLetter.expiryAddress=Expiry.orders
+    - addressSettings.orderDeadLetter.expiryQueue=Expiry.orders
+  # Optional: To verify address properties are applied, you can enable Jolokia
+  # artemis:
+  #   jolokia:
+  #     enabled: true
+----</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Deploy the <code>ActiveMQArtemis</code> instance</strong>
+Apply the CR to your OpenShift cluster:
+<code><code>bash
+oc apply -f broker-with-address-settings.yaml
+</code></code></p>
+</li>
+<li>
+<p><strong>Verify the deployment status</strong>
+Monitor the status of your <code>ActiveMQArtemis</code> instance and its pods:
+<code><code>bash
+oc get activemqartemis mybroker-with-address-settings -o yaml
+oc get pod -l app.kubernetes.io/name=mybroker-with-address-settings
+</code></code>
+Check the <code>status</code> section of the <code>ActiveMQArtemis</code> CR for any errors related to <code>brokerProperties</code>. If everything is successful, the <code>status</code> will indicate that the broker is running, and no errors will be reported regarding the configuration.</p>
+<div class="literalblock">
+<div class="content">
+<pre>You should see a status similar to this (excerpt):
+[source,yaml]
+----
+status:
+  ...
+  brokerPropertiesStatus:
+    errors: [] # This confirms no errors in brokerProperties
+    state: Applied
+  conditions:
+    - lastTransitionTime: "2023-10-27T10:00:00Z"
+      message: The broker is running
+      reason: BrokerRunning
+      status: "True"
+      type: Running
+  deploymentStatus:
+    readyReplicas: 1
+    replicas: 1
+  ...
+----</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Access the broker (Optional: for advanced verification)</strong>
+If you enabled Jolokia in the CR (as commented out in the example), you could port-forward to the broker pod and use a tool like <code>curl</code> or a web browser to inspect the JMX MBeans and confirm the address settings. This step is beyond the scope of basic verification but provides deeper insight.</p>
+<div class="literalblock">
+<div class="content">
+<pre>```bash
+# Get the broker pod name
+BROKER_POD=$(oc get pod -l app.kubernetes.io/name=mybroker-with-address-settings -o jsonpath='{.items[0].metadata.name}')</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre># Port-forward to the pod
+oc port-forward $BROKER_POD 8161:8161
+```
+Then, in your browser, navigate to `http://localhost:8161/console/jolokia/` or use `curl` to query specific MBeans related to address settings.</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Clean up</strong>
+Once you are finished, delete the <code>ActiveMQArtemis</code> instance:
+<code><code>bash
+oc delete -f broker-with-address-settings.yaml
+</code></code>
+This will remove the broker deployment and any associated resources.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This hands-on activity demonstrates how to effectively use the <code>brokerProperties</code> attribute to apply custom address settings, providing granular control over message routing and behavior within your AMQ Broker deployment on OpenShift.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="configuring-address-settings.html">Configuring Address Settings</a></span>
+  <span class="next"><a href="configuring-address-settings-under-brokerproperties.html">Configuring address settings under brokerProperties</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

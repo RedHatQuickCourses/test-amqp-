@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Enclosing value in single quotation marks, for example, myOtherAddresses# :: Address Settings for AMQ Broker on OpenShift</title>
+    <link rel="prev" href="match-property.html">
+    <link rel="next" href="applyrule-property.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Address Settings for AMQ Broker on OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="test-amqp-" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../configuring-address-settings/configuring-address-settings.html">Configuring Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/using-brokerproperties-attribute-in-activemqartemis-cr-instance.html">Using brokerProperties attribute in ActiveMQArtemis CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/configuring-address-settings-under-brokerproperties.html">Configuring address settings under brokerProperties</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/using-activemqartemisaddress-cr-instance.html">Using ActiveMQArtemisAddress CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/configuring-address-settings-in-addresssettings-section-of-activemqartemis-cr.html">Configuring address settings in addressSettings section of ActiveMQArtemis CR</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="address-settings-configuration.html">Address Settings Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="match-property.html">match property</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="enclosing-value-in-single-quotation-marks-for-example-myotheraddresses.html">Enclosing value in single quotation marks, for example, myOtherAddresses#</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="applyrule-property.html">applyRule property</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="specifying-how-the-operator-applies-the-configuration.html">Specifying how the Operator applies the configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="example-merge_all.html">Example: merge_all</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/avoiding-default-configuration-inclusion.html">Avoiding Default Configuration Inclusion</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/not-including-properties-specified-in-the-default-configuration-even-if-not-specified-in-the-cr.html">Not including properties specified in the default configuration, even if not specified in the CR</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../overlapping-address-settings/overlapping-address-settings.html">Overlapping Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../overlapping-address-settings/ensuring-not-to-include-properties-with-the-same-value-in-both-cr-and-default-entry-sub-entry.html">Ensuring not to include properties with the same value in both CR and default Entry Sub-entry</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/appendix.html">Appendix</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Address Settings for AMQ Broker on OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Address Settings for AMQ Broker on OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></li>
+    <li><a href="address-settings-configuration.html">Address Settings Configuration</a></li>
+    <li><a href="enclosing-value-in-single-quotation-marks-for-example-myotheraddresses.html">Enclosing value in single quotation marks, for example, myOtherAddresses#</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Enclosing value in single quotation marks, for example, myOtherAddresses#</h1>
+<h1 id="_enclosing_match_property_values_in_single_quotation_marks" class="sect0"><a class="anchor" href="#_enclosing_match_property_values_in_single_quotation_marks"></a>Enclosing <code>match</code> Property Values in Single Quotation Marks</h1>
+<div class="paragraph">
+<p>When configuring address settings for AMQ Broker on OpenShift, the <code>match</code> property within an <code>addressSetting</code> block plays a crucial role in defining which addresses or address patterns a particular configuration applies to. It allows you to specify a literal address name or a pattern using wildcard characters.</p>
+</div>
+<div class="sect1">
+<h2 id="_the_match_property_and_wildcard_expressions"><a class="anchor" href="#_the_match_property_and_wildcard_expressions"></a>The <code>match</code> Property and Wildcard Expressions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <code>match</code> property is used to define the address or pattern for which the <code>addressSetting</code> configuration is applied. While simple literal address names do not require special enclosing, using <strong>wildcard expressions</strong> necessitates enclosing the <code>match</code> property&#8217;s value in single quotation marks.</p>
+</div>
+<div class="paragraph">
+<p>This is particularly important when you want to apply a configuration to a group of addresses rather than a single, specific one.</p>
+</div>
+<div class="sect2">
+<h3 id="_understanding_wildcard_characters"><a class="anchor" href="#_understanding_wildcard_characters"></a>Understanding Wildcard Characters</h3>
+<div class="paragraph">
+<p>AMQ Broker supports the following wildcard characters in address patterns:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code><mark></code>: The hash character matches <strong>any</strong> address that starts with the preceding string, regardless of how many words follow. For example, <code>europe-news.</mark></code> matches <code>europe-news</code>, <code>europe-news.politics</code>, and <code>europe-news.politics.fr</code>.</p>
+</li>
+<li>
+<p><code><strong></code>: The asterisk character matches a *single word</strong> and can be used anywhere within the address string. For example, <code>usa-news.*</code> matches <code>usa-news.domestic</code> and <code>usa-news.intl</code>, but not <code>usa-news.domestic.politics</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When you incorporate these wildcard characters into your <code>match</code> property value, you <strong>must</strong> enclose the entire value in single quotation marks. This ensures that the Kubernetes Operator correctly interprets the pattern and does not misinterpret the special characters.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+In <code>brokerProperties</code> entries, a period (<code>.</code>) is a reserved character. If you want to create an address pattern that contains a period and a wildcard, you must enclose the address in quotation marks. For example, <code>"usa-news.*"</code>. However, for <code>ActiveMQArtemisAddress</code> CR or <code>addressSettings</code> within <code>ActiveMQArtemis</code> CR, single quotes around the entire <code>match</code> value containing a wildcard are the standard.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_configuring_address_settings_for_a_wildcard_pattern"><a class="anchor" href="#_example_configuring_address_settings_for_a_wildcard_pattern"></a>Example: Configuring Address Settings for a Wildcard Pattern</h3>
+<div class="paragraph">
+<p>Let&#8217;s consider an example where you want to apply specific address settings, such as a dead letter address and maximum delivery attempts, to any address that starts with <code>myOtherAddresses</code>.</p>
+</div>
+<div class="paragraph">
+<p>In this scenario, you would use the hash wildcard character (<code><mark></code>) to match the pattern <code>myOtherAddresses</mark></code>, and you would enclose this pattern in single quotation marks as <code>'myOtherAddresses#'</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker-instance
+spec:
+  # ... other broker configurations ...
+  addressSettings:
+    applyRule: merge_all <i class="conum" data-value="1"></i><b>(1)</b>
+    addressSetting:
+    - match: myAddress
+      deadLetterAddress: myDeadLetterAddress
+      maxDeliveryAttempts: 5
+    - match: 'myOtherAddresses#' <i class="conum" data-value="2"></i><b>(2)</b>
+      deadLetterAddress: myDeadLetterAddressForOthers
+      maxDeliveryAttempts: 3</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>applyRule</code> property specifies how the Operator applies the configuration (e.g., <code>merge_all</code>).</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>The <code>match</code> property uses a wildcard expression <code>'myOtherAddresses#'</code> to apply the settings to all addresses starting with <code>myOtherAddresses</code>. The single quotes are crucial here.</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>In this example:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The first <code>addressSetting</code> block applies specific rules to the literal address <code>myAddress</code>.</p>
+</li>
+<li>
+<p>The second <code>addressSetting</code> block applies a different set of rules (e.g., <code>maxDeliveryAttempts: 3</code>) to <strong>any</strong> address that starts with <code>myOtherAddresses</code>, such as <code>myOtherAddresses.queue1</code>, <code>myOtherAddresses.topic.sub1</code>, etc. The single quotes around <code>'myOtherAddresses#'</code> are essential for the Operator to correctly interpret this wildcard pattern.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By correctly enclosing wildcard expressions in single quotation marks, you ensure that your AMQ Broker address settings are applied as intended, providing flexible and robust message routing and delivery management.</p>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="match-property.html">match property</a></span>
+  <span class="next"><a href="applyrule-property.html">applyRule property</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

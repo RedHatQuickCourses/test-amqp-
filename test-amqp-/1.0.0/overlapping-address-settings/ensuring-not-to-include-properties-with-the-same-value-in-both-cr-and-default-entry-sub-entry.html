@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Ensuring not to include properties with the same value in both CR and default Entry Sub-entry :: Address Settings for AMQ Broker on OpenShift</title>
+    <link rel="prev" href="overlapping-address-settings.html">
+    <link rel="next" href="../appendix/appendix.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Address Settings for AMQ Broker on OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="test-amqp-" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../configuring-address-settings/configuring-address-settings.html">Configuring Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/using-brokerproperties-attribute-in-activemqartemis-cr-instance.html">Using brokerProperties attribute in ActiveMQArtemis CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/configuring-address-settings-under-brokerproperties.html">Configuring address settings under brokerProperties</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/using-activemqartemisaddress-cr-instance.html">Using ActiveMQArtemisAddress CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/configuring-address-settings-in-addresssettings-section-of-activemqartemis-cr.html">Configuring address settings in addressSettings section of ActiveMQArtemis CR</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../configuring-address-settings/example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../address-settings-configuration/address-settings-configuration.html">Address Settings Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/match-property.html">match property</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/enclosing-value-in-single-quotation-marks-for-example-myotheraddresses.html">Enclosing value in single quotation marks, for example, myOtherAddresses#</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/applyrule-property.html">applyRule property</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/specifying-how-the-operator-applies-the-configuration.html">Specifying how the Operator applies the configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/example-merge_all.html">Example: merge_all</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/avoiding-default-configuration-inclusion.html">Avoiding Default Configuration Inclusion</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/not-including-properties-specified-in-the-default-configuration-even-if-not-specified-in-the-cr.html">Not including properties specified in the default configuration, even if not specified in the CR</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="overlapping-address-settings.html">Overlapping Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="ensuring-not-to-include-properties-with-the-same-value-in-both-cr-and-default-entry-sub-entry.html">Ensuring not to include properties with the same value in both CR and default Entry Sub-entry</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/appendix.html">Appendix</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Address Settings for AMQ Broker on OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Address Settings for AMQ Broker on OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></li>
+    <li><a href="overlapping-address-settings.html">Overlapping Address Settings</a></li>
+    <li><a href="ensuring-not-to-include-properties-with-the-same-value-in-both-cr-and-default-entry-sub-entry.html">Ensuring not to include properties with the same value in both CR and default Entry Sub-entry</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Ensuring not to include properties with the same value in both CR and default Entry Sub-entry</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section focuses on the best practices for configuring address settings for AMQ Broker on OpenShift, specifically addressing how to avoid redundancy by not specifying properties in your <code>ActiveMQArtemis</code> Custom Resource (CR) that already match the broker&#8217;s default values.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_ensuring_non_redundant_address_settings_in_activemqartemis_cr"><a class="anchor" href="#_ensuring_non_redundant_address_settings_in_activemqartemis_cr"></a>Ensuring Non-Redundant Address Settings in ActiveMQArtemis CR</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>When configuring address settings for AMQ Broker on OpenShift using the <code>ActiveMQArtemis</code> Custom Resource (CR), you are interacting with a system that comes with a set of predefined default address configurations. These defaults are applied by the broker unless explicitly overridden or modified by your CR. The objective of "Ensuring not to include properties with the same value in both CR and default Entry Sub-entry" is a best practice aimed at maintaining a clean, efficient, and easily maintainable configuration for your broker.</p>
+</div>
+<div class="sect2">
+<h3 id="_technical_explanation"><a class="anchor" href="#_technical_explanation"></a>Technical Explanation</h3>
+<div class="paragraph">
+<p>Understanding how broker defaults interact with your CR configuration is crucial for effective management.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Understanding Default Overlap:</strong></p>
+</li>
+<li>
+<p>AMQ Broker ships with sensible default values for many address settings, such as <code>maxDeliveryAttempts</code>, <code>deadLetterAddress</code>, and <code>maxSizeMessages</code>. These defaults are applied globally or to specific address patterns by the broker itself.</p>
+</li>
+<li>
+<p>When you define an address setting in your <code>ActiveMQArtemis</code> CR, the Operator processes this configuration based on the <code>applyRule</code> property (which defaults to <code>merge_all</code> if not specified).</p>
+</li>
+<li>
+<p>If a property specified in your CR has <strong>the exact same value</strong> as the broker&#8217;s default for that property and the matching address pattern, it creates a redundant entry in your configuration.</p>
+</li>
+<li>
+<p><strong>Why Avoid Redundancy?</strong>
+While specifying a property with its default value in your CR won&#8217;t cause the broker to fail, it introduces several disadvantages:</p>
+<div class="literalblock">
+<div class="content">
+<pre>.1. *Clarity and Readability:* An `ActiveMQArtemis` CR filled with properties that simply reiterate default values becomes overly verbose. This clutter can obscure the actual custom configurations you intend to apply, making the CR harder to read, understand, and review for yourself and other team members.
+.2. *Maintenance Overhead:* Explicitly defining a default value in your CR can lead to long-term maintenance challenges:
+    *   If Red Hat updates a default value for a particular property in a future AMQ Broker version (e.g., to improve performance, security, or introduce new features), your CR will continue to enforce the older, explicitly specified default. This means your broker will not automatically benefit from the updated default unless you manually remove or update the redundant entry in your CR.
+    *   Troubleshooting can become more complex, as you might spend time verifying why a "custom" setting behaves exactly like the default, only to discover it *is* the default.
+.3. *Configuration Complexity:* Redundant settings can add unnecessary complexity to tasks like auditing and compliance checks. It becomes less clear which settings are truly custom and which are merely explicit declarations of existing defaults, potentially leading to misinterpretations.</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>How <code>applyRule</code> Interacts with Overlapping Settings:</strong>
+The <code>applyRule</code> property defines how the Operator merges your CR&#8217;s address settings with the broker&#8217;s default configuration. Understanding its behavior reinforces the best practice of avoiding redundancy:</p>
+</li>
+<li>
+<p><code>merge_all</code> (Default):
+When a property exists in both the CR and the default configuration for a matching address pattern, the CR&#8217;s value will replace the default&#8217;s. Properties unique to either the CR or the default will be included in the final configuration. Even with <code>merge_all</code>, a redundant property in your CR will overwrite the default with the same value, adding no functional change but contributing to verbosity.</p>
+</li>
+<li>
+<p><code>merge_replace</code>:
+For properties that match in both the CR and default, only the CR&#8217;s settings are included in the final configuration. Critically, any properties from the default configuration that are <strong>not</strong> explicitly specified in the CR are also <strong>not</strong> included. This means <code>merge_replace</code> is more aggressive in pruning defaults; it effectively states, "for this address pattern, only use what&#8217;s explicitly defined in the CR, and ignore other defaults not mentioned."</p>
+</li>
+<li>
+<p><code>replace_all</code>:
+All address settings specified in the default configuration for the matching pattern are entirely replaced by those specified in the CR. The final configuration corresponds exactly to what&#8217;s defined in the CR.</p>
+<div class="literalblock">
+<div class="content">
+<pre>Regardless of the `applyRule` chosen, intentionally specifying a property with its default value in your CR is generally unnecessary and can lead to the issues outlined above. The Operator is designed to apply defaults unless explicitly instructed otherwise.</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Best Practice Recommendation:</strong></p>
+</div>
+<div class="paragraph">
+<p>As a general guideline, only include address setting properties in your <code>ActiveMQArtemis</code> CR that you explicitly intend to <strong>change</strong> from the broker&#8217;s default behavior for a given address pattern. If you want a property to retain its default value, simply omit it from your CR. This approach ensures your configurations are concise, clear, and future-proof.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_identifying_and_removing_redundant_address_settings"><a class="anchor" href="#_hands_on_activity_identifying_and_removing_redundant_address_settings"></a>Hands-on Activity: Identifying and Removing Redundant Address Settings</h3>
+<div class="paragraph">
+<p>This activity demonstrates how to identify and clean up redundant address settings in an <code>ActiveMQArtemis</code> CR. For this lab, we&#8217;ll assume a common default setting: <code>maxDeliveryAttempts=10</code> for a general address pattern.</p>
+</div>
+<div class="paragraph">
+<p><strong>Prerequisites:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An OpenShift cluster with the AMQ Broker Operator installed.</p>
+</li>
+<li>
+<p><code>oc</code> CLI configured and logged in to your OpenShift cluster.</p>
+</li>
+<li>
+<p>Familiarity with inspecting <code>ActiveMQArtemis</code> CRs.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Scenario:</strong> You have an existing <code>ActiveMQArtemis</code> CR with some address settings, and you want to ensure it doesn&#8217;t contain redundant default values.</p>
+</div>
+<div class="paragraph">
+<p><strong>Steps:</strong></p>
+</div>
+<div class="literalblock">
+<div class="title">1. <strong>Examine a Hypothetical Default Setting:</strong></div>
+<div class="content">
+<pre>Let's assume that for the AMQ Broker version you are using, the default configuration for any address (`#`) includes `maxDeliveryAttempts` set to `10`. This is a common default for message redelivery attempts.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">2. <strong>Create an Initial <code>ActiveMQArtemis</code> CR with a Redundant Setting:</strong></div>
+<div class="content">
+<pre>Create a new file named `activemq-artemis-redundant.yaml` with the following content. This CR explicitly sets `maxDeliveryAttempts` to `10` for the `myAddress` pattern, which is our hypothetical default. We also include a custom `deadLetterAddress`.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: mybroker-redundant
+spec:
+  brokerProperties:
+    - "addressSettings.#.myAddress.maxDeliveryAttempts=10"
+    - "addressSettings.#.myAddress.deadLetterAddress=DLQ.myAddress"
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+----</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>NOTE: In a real-world scenario, you would refer to the official AMQ Broker documentation for your specific version to find the actual default values for address settings. Here, `maxDeliveryAttempts=10` is used as an illustrative example of a default.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">3. <strong>Deploy the Broker with the Redundant Setting:</strong></div>
+<div class="content">
+<pre>Apply this CR to your OpenShift cluster.
+```bash
+oc apply -f activemq-artemis-redundant.yaml
+```
+Wait for the broker pod (e.g., `mybroker-redundant-ss-0`) to be running. You can check its status using `oc get pods -w`.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">4. <strong>Verify Applied Settings (Conceptual):</strong></div>
+<div class="content">
+<pre>While directly inspecting the merged runtime configuration of an address setting can be complex, conceptually, the broker will now have:
+*   `maxDeliveryAttempts=10` for `myAddress` (from your explicit CR setting).
+*   `deadLetterAddress=DLQ.myAddress` for `myAddress` (from your explicit CR setting).</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Notice that `maxDeliveryAttempts=10` is redundant because it matches our assumed broker default. The broker's behavior would be identical even if this line were omitted.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">5. <strong>Create a Cleaned <code>ActiveMQArtemis</code> CR (Removing Redundancy):</strong></div>
+<div class="content">
+<pre>Now, create a new file named `activemq-artemis-clean.yaml`. In this CR, we remove the `maxDeliveryAttempts` setting because it matches the broker's default. We only specify `deadLetterAddress`, as that is a custom setting we want to enforce.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: mybroker-clean
+spec:
+  brokerProperties:
+    - "addressSettings.#.myAddress.deadLetterAddress=DLQ.myAddress"
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+----</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">6. <strong>Deploy the Cleaned Broker:</strong></div>
+<div class="content">
+<pre>Apply this new CR to deploy a separate broker instance.
+```bash
+oc apply -f activemq-artemis-clean.yaml
+```
+Wait for the `mybroker-clean-ss-0` pod to be running.</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="title">7. <strong>Compare Configurations and Observe Best Practice:</strong></div>
+<div class="content">
+<pre>Both `mybroker-redundant` and `mybroker-clean` will result in identical runtime configurations for `myAddress`:</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>maxDeliveryAttempts=10</code>:</p>
+</li>
+<li>
+<p>In <code>mybroker-redundant</code>, this comes from the explicit setting in the CR.</p>
+</li>
+<li>
+<p>In <code>mybroker-clean</code>, this comes from the broker&#8217;s default configuration (because it was not overridden by the CR).</p>
+</li>
+<li>
+<p><code>deadLetterAddress=DLQ.myAddress</code>: This comes from the explicit setting in the CR for both brokers.</p>
+<div class="literalblock">
+<div class="content">
+<pre>The `activemq-artemis-clean.yaml` configuration is preferred because it:
+*   Is more concise and readable.
+*   Clearly indicates which settings are truly custom and which are implicitly handled by defaults.
+*   Allows the broker to automatically adopt any future changes to the `maxDeliveryAttempts` default value, if Red Hat updates it in a newer broker version, without requiring manual intervention in your CR.</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="literalblock">
+<div class="title">8. <strong>Clean Up:</strong></div>
+<div class="content">
+<pre>Delete the broker instances created during this activity.
+```bash
+oc delete -f activemq-artemis-redundant.yaml
+oc delete -f activemq-artemis-clean.yaml
+```
+This activity demonstrates the value of avoiding redundant configuration entries, leading to cleaner, more maintainable, and future-proof broker deployments.</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="overlapping-address-settings.html">Overlapping Address Settings</a></span>
+  <span class="next"><a href="../appendix/appendix.html">Appendix</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

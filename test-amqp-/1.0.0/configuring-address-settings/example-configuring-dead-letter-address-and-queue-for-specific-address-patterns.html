@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Example: Configuring dead letter address and queue for specific address patterns :: Address Settings for AMQ Broker on OpenShift</title>
+    <link rel="prev" href="configuring-address-settings-under-brokerproperties.html">
+    <link rel="next" href="using-activemqartemisaddress-cr-instance.html">
+    <meta name="generator" content="Antora 3.1.3">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+    <script>var uiRootPath = '../../../_'</script>
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com" target="_blank"><img src="../../../_/img/redhat-logo.png" height="40px" alt="Red Hat"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="../../..">Address Settings for AMQ Broker on OpenShift</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://github.com/RedHatQuickCourses/REPLACEREPONAME/issues" target="_blank">Report Issues</a>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="test-amqp-" data-version="1.0.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../LABENV/index.html">Lab Environment</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="configuring-address-settings.html">Configuring Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="using-brokerproperties-attribute-in-activemqartemis-cr-instance.html">Using brokerProperties attribute in ActiveMQArtemis CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-address-settings-under-brokerproperties.html">Configuring address settings under brokerProperties</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="using-activemqartemisaddress-cr-instance.html">Using ActiveMQArtemisAddress CR instance</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="configuring-address-settings-in-addresssettings-section-of-activemqartemis-cr.html">Configuring address settings in addressSettings section of ActiveMQArtemis CR</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../address-settings-configuration/address-settings-configuration.html">Address Settings Configuration</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/match-property.html">match property</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/enclosing-value-in-single-quotation-marks-for-example-myotheraddresses.html">Enclosing value in single quotation marks, for example, myOtherAddresses#</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/applyrule-property.html">applyRule property</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/specifying-how-the-operator-applies-the-configuration.html">Specifying how the Operator applies the configuration</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../address-settings-configuration/example-merge_all.html">Example: merge_all</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/avoiding-default-configuration-inclusion.html">Avoiding Default Configuration Inclusion</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../avoiding-default-configuration-inclusion/not-including-properties-specified-in-the-default-configuration-even-if-not-specified-in-the-cr.html">Not including properties specified in the default configuration, even if not specified in the CR</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="../overlapping-address-settings/overlapping-address-settings.html">Overlapping Address Settings</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../overlapping-address-settings/ensuring-not-to-include-properties-with-the-same-value-in-both-cr-and-default-entry-sub-entry.html">Ensuring not to include properties with the same value in both CR and default Entry Sub-entry</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../appendix/appendix.html">Appendix</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Address Settings for AMQ Broker on OpenShift</span>
+    <span class="version">1.0.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <a class="title" href="../index.html">Address Settings for AMQ Broker on OpenShift</a>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Address Settings for AMQ Broker on OpenShift</a></li>
+    <li><a href="configuring-address-settings.html">Configuring Address Settings</a></li>
+    <li><a href="example-configuring-dead-letter-address-and-queue-for-specific-address-patterns.html">Example: Configuring dead letter address and queue for specific address patterns</a></li>
+  </ul>
+</nav>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Example: Configuring dead letter address and queue for specific address patterns</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Here&#8217;s the content for configuring dead letter addresses and queues for specific address patterns, presented in Antora AsciiDoc format.</p>
+</div>
+</div>
+</div>
+<h1 id="config-dlq-address-patterns" class="sect0"><a class="anchor" href="#config-dlq-address-patterns"></a>Example: Configuring Dead Letter Address and Queue for Specific Address Patterns</h1>
+<div class="paragraph">
+<p>In message-driven architectures, ensuring reliable message delivery is crucial. Sometimes, messages fail to be delivered to their intended consumers due often to issues like malformed messages, consumer unavailability, or application errors. To prevent these undelivered messages from blocking queues or being lost, Apache ActiveMQ Artemis brokers utilize <strong>Dead Letter Queues</strong> (DLQs).</p>
+</div>
+<div class="paragraph">
+<p>A Dead Letter Queue acts as a holding area for messages that could not be delivered successfully after a specified number of attempts. A system administrator can later inspect these messages, understand why delivery failed, and decide whether to reprocess them, discard them, or archive them. This mechanism prevents infinite delivery attempts, reduces resource consumption, and provides valuable insights into message processing failures.</p>
+</div>
+<div class="paragraph">
+<p>This section details how to configure a dead letter address and queue for specific address patterns using the <code>brokerProperties</code> attribute in your <code>ActiveMQArtemis</code> Custom Resource (CR) instance. While it&#8217;s also possible to configure address settings within the <code>addressSettings</code> section of the <code>ActiveMQArtemis</code> CR when using <code>ActiveMQArtemisAddress</code> CRs for address configuration, this example focuses on the <code>brokerProperties</code> method due to its direct illustration in the provided context.</p>
+</div>
+<div class="sect1">
+<h2 id="_configuring_dead_letter_address_and_queue_using_brokerproperties"><a class="anchor" href="#_configuring_dead_letter_address_and_queue_using_brokerproperties"></a>Configuring Dead Letter Address and Queue using <code>brokerProperties</code></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To configure a dead letter address and queue for specific address patterns, you typically perform two main steps within the <code>brokerProperties</code> of your <code>ActiveMQArtemis</code> CR:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Define the Dead Letter Address and Queue:</strong> Create a specific address and an associated queue that will serve as the dead letter destination.</p>
+</li>
+<li>
+<p><strong>Configure Address Settings for Target Patterns:</strong> For the addresses that you want to protect, specify the <code>deadLetterAddress</code> and <code>maxDeliveryAttempts</code> properties. These settings dictate <strong>when</strong> and <strong>where</strong> a message should be moved if it fails delivery multiple times.</p>
+</li>
+</ol>
+</div>
+<div class="sect2">
+<h3 id="_key_properties_for_dead_letter_configuration"><a class="anchor" href="#_key_properties_for_dead_letter_configuration"></a>Key Properties for Dead Letter Configuration</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>deadLetterAddress</code>: This property specifies the address to which the broker sends undelivered messages. This should point to the dead letter address you define.</p>
+</li>
+<li>
+<p><code>maxDeliveryAttempts</code>: This integer value defines the maximum number of delivery attempts a broker makes before moving a message to the configured <code>deadLetterAddress</code>.</p>
+</li>
+<li>
+<p><code>match</code> property (implicit in <code>brokerProperties</code> syntax): When configuring <code>addressSettings</code> using <code>brokerProperties</code>, the "match" pattern for the address is implicitly defined by the <code>addressSettings.&lt;address-name-pattern&gt;</code> syntax. If you use a wildcard expression as part of <code>&lt;address-name-pattern&gt;</code>, you <strong>must</strong> enclose the value in single quotation marks, for example, <code>'myAddressPattern#'</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_wildcard_usage_in_address_patterns"><a class="anchor" href="#_wildcard_usage_in_address_patterns"></a>Wildcard Usage in Address Patterns</h3>
+<div class="paragraph">
+<p>You can use wildcard characters in your address patterns to apply settings to groups of addresses:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code><strong></code> (Asterisk): Matches any sequence of zero or more words at a single delimiter boundary (e.g., <code>news.</strong></code> matches <code>news.europe</code> but not <code>news.europe.sports</code>).</p>
+</li>
+<li>
+<p><code><mark></code> (Number Sign): Matches any sequence of zero or more words across multiple delimiter boundaries (e.g., <code>news.</mark></code> matches <code>news.europe</code> and <code>news.europe.sports</code>).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Matching of patterns is done at each delimiter boundary, which is represented by a period (<code>.</code>).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example_configuration"><a class="anchor" href="#_example_configuration"></a>Example Configuration</h3>
+<div class="paragraph">
+<p>Let&#8217;s consider an example where we want to configure a dead letter queue for messages initially destined for addresses matching the pattern <code>usa-news</code> and <code>other-regions.#</code>. Messages that fail delivery after 5 attempts to these patterns will be moved to a <code>usDeadLetter</code> address and queue.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker-deployment
+spec:
+  # ... other broker configuration ...
+  brokerProperties:
+    # 1. Define the Dead Letter Address and Queue
+    - addressConfigurations.usDeadLetter.routingTypes=MULTICAST
+    - addressConfigurations.usDeadLetter.queueConfigs.usDeadLetter-queue.address=usDeadLetter
+
+    # 2. Configure Address Settings for 'usa-news'
+    #    Messages for 'usa-news' failing delivery 5 times go to 'usDeadLetter'
+    - addressSettings.usa-news.deadLetterAddress=usDeadLetter
+    - addressSettings.usa-news.maxDeliveryAttempts=5
+
+    # 3. Configure Address Settings for 'other-regions.#' using a wildcard
+    #    Messages for any address starting with 'other-regions.' failing delivery
+    #    5 times go to 'usDeadLetter'. Note the single quotes for the wildcard pattern.
+    - addressSettings.'other-regions.#'.deadLetterAddress=usDeadLetter
+    - addressSettings.'other-regions.#'.maxDeliveryAttempts=5</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this example:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>usDeadLetter</code> address and its <code>usDeadLetter-queue</code> are created to serve as the dead letter destination.</p>
+</li>
+<li>
+<p>For any message sent to the <code>usa-news</code> address, if the broker attempts delivery 5 times unsuccessfully, the message is moved to the <code>usDeadLetter</code> address.</p>
+</li>
+<li>
+<p>Similarly, for any message sent to an address matching <code>other-regions.#</code> (e.g., <code>other-regions.europe</code>, <code>other-regions.asia.alerts</code>), if delivery fails 5 times, the message is moved to <code>usDeadLetter</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="lab-config-dlq-patterns"><a class="anchor" href="#lab-config-dlq-patterns"></a>Hands-on Activity: Configure a Dead Letter Address and Queue for Specific Address Patterns</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In this lab, you will modify an existing <code>ActiveMQArtemis</code> broker deployment on OpenShift to implement a dead letter queue for specific address patterns.</p>
+</div>
+<div class="sect2">
+<h3 id="_objective"><a class="anchor" href="#_objective"></a>Objective</h3>
+<div class="paragraph">
+<p>Configure an AMQ Broker instance to move messages to a dedicated dead letter queue if they fail to be delivered to addresses matching <code>app.failures</code> or <code>system.errors.#</code> after 3 attempts.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_prerequisites"><a class="anchor" href="#_prerequisites"></a>Prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Access to an OpenShift cluster.</p>
+</li>
+<li>
+<p>The <code>oc</code> command-line tool installed and configured.</p>
+</li>
+<li>
+<p>An existing <code>ActiveMQArtemis</code> broker instance deployed in a project you can modify. For example, a broker named <code>my-broker</code> in the <code>amq-broker-project</code> namespace.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_steps"><a class="anchor" href="#_steps"></a>Steps</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Log in to OpenShift</strong>
+Open your terminal and log in to your OpenShift cluster:
+[source,bash]
+----
+oc login -u &lt;your_username&gt; -p &lt;your_password&gt; --server=&lt;your_openshift_api_url&gt;
+----</p>
+</li>
+<li>
+<p><strong>Switch to the Project</strong>
+Switch to the OpenShift project where your AMQ Broker is deployed:
+[source,bash]
+----
+oc project amq-broker-project
+----
+(Replace <code>amq-broker-project</code> with your actual project name).</p>
+</li>
+<li>
+<p><strong>Edit the <code>ActiveMQArtemis</code> Custom Resource</strong>
+You will edit the <code>ActiveMQArtemis</code> CR for your broker instance. This will open the YAML definition in your default editor.
+[source,bash]
+----
+oc edit ActiveMQArtemis my-broker
+----
+(Replace <code>my-broker</code> with the name of your broker instance).</p>
+</li>
+<li>
+<p><strong>Add Dead Letter Configuration under <code>brokerProperties</code></strong>
+Navigate to the <code>spec.brokerProperties</code> section. If this section does not exist, you will need to add it.
+Add the following lines to define the dead letter address and queue, and then configure the address settings for the target patterns.</p>
+<div class="literalblock">
+<div class="content">
+<pre>[source,yaml]
+----
+# ... (existing ActiveMQArtemis CR content) ...
+spec:
+  # ... (other existing spec properties) ...
+  brokerProperties:
+    # Define the Dead Letter Address and Queue
+    - addressConfigurations.dlq.routingTypes=MULTICAST
+    - addressConfigurations.dlq.queueConfigs.dlq-queue.address=dlq</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre># Configure Address Settings for 'app.failures'
+- addressSettings.app.failures.deadLetterAddress=dlq
+- addressSettings.app.failures.maxDeliveryAttempts=3</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>    # Configure Address Settings for 'system.errors.#' using a wildcard
+    # Note the single quotes around 'system.errors.#' as it contains a wildcard.
+    - addressSettings.'system.errors.#'.deadLetterAddress=dlq
+    - addressSettings.'system.errors.#'.maxDeliveryAttempts=3
+----</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>*Self-Correction Note:* Ensure you maintain correct YAML indentation and structure when adding these properties. Each `-` indicates a new item in the `brokerProperties` list.</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Save and Apply Changes</strong>
+Save the changes and exit your editor. OpenShift will automatically apply the updated <code>ActiveMQArtemis</code> CR, and the Operator will reconcile the broker deployment. This might trigger a restart of the broker pods to apply the new configuration.</p>
+</li>
+<li>
+<p><strong>Verify the Configuration (Optional)</strong>
+While direct verification of DLQ functionality without an actual message failure scenario is complex, you can ensure the broker pods are running and healthy after the update.
+[source,bash]
+----
+oc get pods -l app=my-broker # Replace 'my-broker' with your broker&#8217;s app label
+----
+You can also inspect the broker&#8217;s configuration file (e.g., <code>broker.xml</code> within the broker pod) by exec&#8217;ing into the pod, though this is advanced and not always necessary as the Operator manages this.</p>
+<div class="literalblock">
+<div class="content">
+<pre>To functionally test, you would typically:
+*   Send a message to an address like `app.failures` or `system.errors.critical`.
+*   Ensure there are no consumers for these queues, or configure a consumer that deliberately fails to acknowledge messages.
+*   After 3 delivery attempts, the message should appear in the `dlq-queue`. You could use an AMQ console or another client to inspect the `dlq-queue` contents.</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This hands-on activity demonstrates how to robustly handle message delivery failures by directing undeliverable messages to a dedicated dead letter queue, improving the reliability and observability of your messaging system.#  Example: Configuring dead letter address and queue for specific address patterns</p>
+</div>
+<div class="paragraph">
+<p>This section demonstrates how to configure a dead letter address and queue, and then apply these settings to specific address patterns within your AMQ Broker deployment on OpenShift. A dead letter address and queue are crucial for handling messages that cannot be delivered to their intended clients, preventing infinite delivery attempts and allowing administrators to inspect undelivered messages.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuring_dead_letter_address_and_queue_for_specific_address_patterns"><a class="anchor" href="#_configuring_dead_letter_address_and_queue_for_specific_address_patterns"></a>Configuring Dead Letter Address and Queue for Specific Address Patterns</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can configure address settings, including dead letter addresses and queues, using the <code>brokerProperties</code> attribute within your <code>ActiveMQArtemis</code> Custom Resource (CR) instance. This method allows you to define flexible rules for message delivery and undeliverable message handling.</p>
+</div>
+<div class="sect2">
+<h3 id="_understanding_dead_lettering"><a class="anchor" href="#_understanding_dead_lettering"></a>Understanding Dead Lettering</h3>
+<div class="paragraph">
+<p>When a message cannot be successfully delivered to a client after a specified number of attempts, the broker can redirect it to a designated <strong>dead letter address</strong>. This address typically has an associated <strong>dead letter queue</strong> where these undelivered messages are stored. This mechanism is vital for:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Preventing resource exhaustion:</strong> Avoiding continuous retries on undeliverable messages.</p>
+</li>
+<li>
+<p><strong>Debugging and analysis:</strong> Allowing administrators to inspect messages that failed delivery to understand the cause.</p>
+</li>
+<li>
+<p><strong>Data integrity:</strong> Ensuring no messages are lost due to transient client issues.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configuration_steps_using_brokerproperties"><a class="anchor" href="#_configuration_steps_using_brokerproperties"></a>Configuration Steps using <code>brokerProperties</code></h3>
+<div class="paragraph">
+<p>To configure a dead letter address and queue for specific address patterns, you will modify your <code>ActiveMQArtemis</code> CR instance.</p>
+</div>
+<div class="sect3">
+<h4 id="_step_1_define_the_dead_letter_address_and_queue"><a class="anchor" href="#_step_1_define_the_dead_letter_address_and_queue"></a>Step 1: Define the Dead Letter Address and Queue</h4>
+<div class="paragraph">
+<p>First, you need to define the address and queue that will serve as your dead letter destination. Add the following entries under the <code>brokerProperties</code> attribute in your <code>ActiveMQArtemis</code> CR.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Defining a dead letter address and queue</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: activemq.broker.amq.io/v1beta2
+kind: ActiveMQArtemis
+metadata:
+  name: ex-all-artemis
+spec:
+  # ... other broker configurations
+  brokerProperties:
+    # ... existing broker properties
+    - addressConfigurations.usDeadLetter.routingTypes=MULTICAST
+    - addressConfigurations.usDeadLetter.queueConfigs.usDeadLetter-queue.address=usDeadLetter
+    # ... other address settings</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>addressConfigurations.usDeadLetter.routingTypes=MULTICAST</code>: This line creates a new address named <code>usDeadLetter</code> with <code>MULTICAST</code> routing. You could also use <code>ANYCAST</code> depending on your requirements.</p>
+</li>
+<li>
+<p><code>addressConfigurations.usDeadLetter.queueConfigs.usDeadLetter-queue.address=usDeadLetter</code>: This line creates a queue named <code>usDeadLetter-queue</code> that is bound to the <code>usDeadLetter</code> address. This queue will receive messages routed to <code>usDeadLetter</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_2_apply_dead_letter_settings_to_a_specific_address"><a class="anchor" href="#_step_2_apply_dead_letter_settings_to_a_specific_address"></a>Step 2: Apply Dead Letter Settings to a Specific Address</h4>
+<div class="paragraph">
+<p>Now, link a specific address to the <code>usDeadLetter</code> address you just created. For example, if you have an address named <code>usa-news</code>, you can configure messages failing delivery to this address to be sent to <code>usDeadLetter</code>.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Applying dead letter settings to a specific address</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: activemq.broker.amq.io/v1beta2
+kind: ActiveMQArtemis
+metadata:
+  name: ex-all-artemis
+spec:
+  # ... other broker configurations
+  brokerProperties:
+    # ... existing broker properties, including usDeadLetter definition
+    - addressSettings.usa-news.deadLetterAddress=usDeadLetter
+    - addressSettings.usa-news.maxDeliveryAttempts=5
+    # ... other address settings</code></pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>addressSettings.usa-news.deadLetterAddress=usDeadLetter</code>: This configures the <code>usa-news</code> address to send any undeliverable messages to the <code>usDeadLetter</code> address.</p>
+</li>
+<li>
+<p><code>addressSettings.usa-news.maxDeliveryAttempts=5</code>: This specifies that the broker will attempt to deliver a message to a client subscribing to <code>usa-news</code> up to 5 times. If all attempts fail, the message will be moved to <code>usDeadLetter</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_step_3_apply_dead_letter_settings_to_an_address_pattern"><a class="anchor" href="#_step_3_apply_dead_letter_settings_to_an_address_pattern"></a>Step 3: Apply Dead Letter Settings to an Address Pattern</h4>
+<div class="paragraph">
+<p>You can extend this configuration to apply dead letter settings to a group of addresses that match a specific pattern using wildcards. The most common wildcards are:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>*</code> (asterisk): Matches any sequence of zero or more characters within a single word (delimited by <code>.</code>).</p>
+</li>
+<li>
+<p><code>#</code> (number sign): Matches any sequence of zero or more words.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When using wildcards in the <code>match</code> property, you <strong>must</strong> enclose the value in single quotation marks.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example: Applying dead letter settings to an address pattern</div>
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-yaml hljs" data-lang="yaml">apiVersion: activemq.broker.amq.io/v1beta2
+kind: ActiveMQArtemis
+metadata:
+  name: ex-all-artemis
+spec:
+  # ... other broker configurations
+  brokerProperties:
+    # ... existing broker properties, including usDeadLetter definition
+    - addressSettings.usa-news.deadLetterAddress=usDeadLetter
+    - addressSettings.usa-news.maxDeliveryAttempts=5
+    - addressSettings.'myOtherAddresses#'.match='myOtherAddresses#' <i class="conum" data-value="1"></i><b>(1)</b>
+    - addressSettings.'myOtherAddresses#'.deadLetterAddress=usDeadLetter
+    - addressSettings.'myOtherAddresses#'.maxDeliveryAttempts=5
+    # ... other address settings</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The <code>match</code> property uses a wildcard. Note the single quotes around <code>'myOtherAddresses#'</code>.
+<div class="ulist">
+<ul>
+<li>
+<p><code>addressSettings.'myOtherAddresses#'.match='myOtherAddresses#'</code>: This line defines an address setting entry that applies to any address starting with <code>myOtherAddresses</code>, followed by any sequence of words (e.g., <code>myOtherAddresses.topic1</code>, <code>myOtherAddresses.region.subtopic</code>).</p>
+</li>
+<li>
+<p><code>addressSettings.'myOtherAddresses#'.deadLetterAddress=usDeadLetter</code>: Messages failing delivery for any address matching <code>myOtherAddresses#</code> will be sent to <code>usDeadLetter</code>.</p>
+</li>
+<li>
+<p><code>addressSettings.'myOtherAddresses#'.maxDeliveryAttempts=5</code>: Sets the maximum delivery attempts to 5 for addresses matching the pattern.</p>
+</li>
+</ul>
+</div></td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><span class="image unresolved"><img src="addressSettings.drawio.png" alt="addressSettings.drawio"></span></p>
+</div>
+<div class="paragraph">
+<p><em>Figure 1: Flow of messages to a dead letter queue based on address patterns</em></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_key_properties_for_dead_lettering"><a class="anchor" href="#_key_properties_for_dead_lettering"></a>Key Properties for Dead Lettering</h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>deadLetterAddress</code>: Specifies the address to which undelivered messages will be sent.</p>
+</li>
+<li>
+<p><code>maxDeliveryAttempts</code>: Defines the maximum number of delivery attempts before a message is moved to the <code>deadLetterAddress</code>.</p>
+</li>
+<li>
+<p><code>match</code>: (Optional) When used, this property defines the address pattern to which the settings apply. If omitted, the settings apply to the exact address name used in the <code>addressSettings.&lt;address-name&gt;</code> part.</p>
+</li>
+<li>
+<p><code>applyRule</code>: (Optional) Specifies how the Operator applies the configuration when there are overlapping address settings. For example, <code>merge_all</code>. While not shown in this specific example, it&#8217;s an important property for complex configurations.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hands_on_activity_deploying_and_testing_dead_letter_configuration"><a class="anchor" href="#_hands_on_activity_deploying_and_testing_dead_letter_configuration"></a>Hands-on Activity: Deploying and Testing Dead Letter Configuration</h3>
+<div class="paragraph">
+<p>In this activity, you will deploy an AMQ Broker instance with the dead letter configuration and simulate message delivery failures to observe the dead lettering in action.</p>
+</div>
+<div class="sect3">
+<h4 id="_prerequisites_2"><a class="anchor" href="#_prerequisites_2"></a>Prerequisites</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>An OpenShift cluster with <code>oc</code> CLI configured.</p>
+</li>
+<li>
+<p>The AMQ Broker Operator installed on your OpenShift cluster.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_procedure"><a class="anchor" href="#_procedure"></a>Procedure</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Create the <code>ActiveMQArtemis</code> CR:</strong>
+Save the following YAML content to a file named <code>broker-with-deadletter.yaml</code>.</p>
+<div class="literalblock">
+<div class="content">
+<pre>[source,yaml]
+----
+apiVersion: activemq.broker.amq.io/v1beta2
+kind: ActiveMQArtemis
+metadata:
+  name: ex-deadletter-broker
+spec:
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.13
+    requireLogin: false
+  brokerProperties:
+    - addressConfigurations.usDeadLetter.routingTypes=MULTICAST
+    - addressConfigurations.usDeadLetter.queueConfigs.usDeadLetter-queue.address=usDeadLetter
+    - addressSettings.usa-news.deadLetterAddress=usDeadLetter
+    - addressSettings.usa-news.maxDeliveryAttempts=3 # Set to 3 for easier testing
+    - addressSettings.'europe-news#'.match='europe-news#'
+    - addressSettings.'europe-news#'.deadLetterAddress=usDeadLetter
+    - addressSettings.'europe-news#'.maxDeliveryAttempts=2 # Set to 2 for easier testing
+----</pre>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Deploy the Broker:</strong>
+Apply the CR to your OpenShift cluster.
+[source,bash]
+----
+oc apply -f broker-with-deadletter.yaml
+----
+Wait for the broker pod to be running. You can check its status:
+[source,bash]
+----
+oc get activemqartemis ex-deadletter-broker -o jsonpath='{.status.brokerStatus[0].state}'
+----
+It should eventually show <code>Running</code>.</p>
+</li>
+<li>
+<p><strong>Access the Broker Management Console:</strong>
+Expose the broker&#8217;s web console to access it from your local machine.
+[source,bash]
+----
+oc get route ex-deadletter-broker-amq-broker-console -o jsonpath='{"https://"}{.spec.host}'
+----
+Open the provided URL in your browser. Log in if required (default username/password if <code>requireLogin</code> is false, otherwise check the CR secrets).</p>
+</li>
+<li>
+<p><strong>Send Messages to <code>usa-news</code>:</strong>
+You can use a simple message producer (e.g., JMS client, or AMQP client, or even the console&#8217;s "Send Message" feature if available) to send a few messages to the <code>usa-news</code> address. Since there are no consumers for <code>usa-news</code>, these messages will remain undelivered.</p>
+</li>
+<li>
+<p><strong>Observe Dead Lettering:</strong>
+After sending a few messages to <code>usa-news</code>, refresh the broker management console.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Navigate to the "Addresses" or "Queues" section.</p>
+</li>
+<li>
+<p>You should eventually see messages appearing in the <code>usDeadLetter-queue</code>. The <code>maxDeliveryAttempts</code> for <code>usa-news</code> is 3. After 3 failed delivery attempts, the broker will move the messages to <code>usDeadLetter-queue</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Send Messages to a Pattern-Matched Address (e.g., <code>europe-news.london</code>):</strong>
+Send a few messages to an address like <code>europe-news.london</code> or <code>europe-news.paris</code>. These addresses match the <code>europe-news#</code> pattern.</p>
+</li>
+<li>
+<p><strong>Verify Dead Lettering for Pattern-Matched Addresses:</strong>
+Again, refresh the console and check the <code>usDeadLetter-queue</code>. Messages sent to <code>europe-news.london</code> (or similar) should also appear in <code>usDeadLetter-queue</code> after 2 failed delivery attempts (as <code>maxDeliveryAttempts</code> is 2 for this pattern).</p>
+</li>
+<li>
+<p><strong>Clean Up:</strong>
+Delete the broker instance when you are finished.
+[source,bash]
+----
+oc delete activemqartemis ex-deadletter-broker
+----</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<nav class="pagination">
+  <span class="prev"><a href="configuring-address-settings-under-brokerproperties.html">Configuring address settings under brokerProperties</a></span>
+  <span class="next"><a href="using-activemqartemisaddress-cr-instance.html">Using ActiveMQArtemisAddress CR instance</a></span>
+</nav>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <img src="../../../_/img/rhl-logo-red.png" height="40px" alt="Red Hat"  href="https://redhat.com" >
+</footer><script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>
