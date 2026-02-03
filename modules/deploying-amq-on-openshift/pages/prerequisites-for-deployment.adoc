@@ -40,4 +40,159 @@ Before deploying Red Hat AMQ on OpenShift, it is essential to ensure that the ne
 
 6. **Resource Allocation**: Plan and allocate sufficient resources (CPU, memory, and storage) for the AMQ brokers based on your expected workload.
 
-7. **Security**: Implement
+7. **Security**: Implement#  Prerequisites for deployment
+
+= Prerequisites for deployment
+
+Deploying Red Hat AMQ on OpenShift requires careful preparation to ensure a smooth and successful setup. Meeting these prerequisites ensures that your OpenShift environment is correctly configured to host AMQ, providing the necessary resources, access, and foundational services. This section outlines the essential requirements you must address before proceeding with the AMQ deployment.
+
+== OpenShift Cluster Access and Configuration
+
+A fully functional OpenShift cluster is the fundamental prerequisite. You will need administrative access to an OpenShift cluster with adequate resources.
+
+=== Required Cluster Components:
+
+*   **OpenShift Container Platform (OCP) Cluster**: A running OpenShift 4.x or later cluster. Ensure it has sufficient compute (CPU), memory, and storage resources available for the AMQ broker instances and any associated components.
+*   **Administrator Access**: You must have `cluster-admin` privileges or a role with sufficient permissions to:
+    *   Create new projects (namespaces).
+    *   Install Operators from the OperatorHub.
+    *   Create Custom Resources (CRs) for AMQ Broker.
+    *   Manage network configurations (e.g., routes, network policies).
+    *   Manage storage resources (e.g., Persistent Volume Claims).
+*   **OpenShift CLI (oc tool)**: The `oc` command-line interface tool must be installed and configured on your local machine, authenticated to your target OpenShift cluster. This tool is essential for interacting with the cluster, managing resources, and deploying applications.
+
+=== Hands-on Activity: Verify OpenShift Cluster Access and `oc` Tool
+
+To ensure your environment meets these core requirements, perform the following verification steps:
+
+. Log in to your OpenShift cluster using the `oc` CLI tool. You can obtain your login token from the OpenShift Web Console (your user profile -> `Copy Login Command`):
++
+[source,bash]
+----
+oc login --token=<your_token> --server=<your_api_url>
+----
+
+. Verify your current user and associated projects. This confirms your authentication and shows what namespaces you have access to:
++
+[source,bash]
+----
+oc whoami
+oc projects
+----
++
+Confirm that you can see your current user and a list of available projects. If you do not have a dedicated project, you will likely create one later.
+
+. Check the OpenShift client and server versions to ensure compatibility:
++
+[source,bash]
+----
+oc version
+----
++
+Ensure the client and server versions are compatible and meet the minimum requirements (typically OpenShift 4.x or later).
+
+. (Optional) As an administrator, verify the general health and resource availability of your cluster:
++
+[source,bash]
+----
+oc adm top nodes
+oc adm top pods -A
+----
++
+This helps confirm the cluster has available capacity for new deployments.
+
+== Persistent Storage Provisioner
+
+Red Hat AMQ brokers, especially in a production environment, require persistent storage for message durability and state. OpenShift manages this through Persistent Volumes (PVs) and Persistent Volume Claims (PVCs).
+
+=== Requirement:
+
+*   **Dynamic Storage Provisioner**: Your OpenShift cluster must have a configured dynamic storage provisioner (e.g., OpenShift Container Storage (OCS) / Rook-Ceph, AWS EBS, Azure Disk, Google Persistent Disk, NFS CSI, etc.). This allows AMQ to dynamically provision storage as needed, simplifying broker deployment and management.
+
+=== Hands-on Activity: Verify Storage Provisioner
+
+To confirm a storage provisioner is available in your cluster:
+
+. List available `StorageClass` objects in your cluster:
++
+[source,bash]
+----
+oc get storageclass
+----
++
+You should see at least one `StorageClass` listed, indicating a provisioner is configured. Note down the name of a suitable `StorageClass` (e.g., `ocs-storagecluster-cephfs`, `gp2`, `standard`) that you intend to use for AMQ.
+
+. (Optional) Describe a specific `StorageClass` to understand its provisioner and parameters:
++
+[source,bash]
+----
+oc describe storageclass <your-storage-class-name>
+----
+
+== Red Hat AMQ Broker Operator
+
+The recommended and most efficient way to deploy and manage Red Hat AMQ on OpenShift is by using the AMQ Broker Operator. The Operator automates the deployment, scaling, and lifecycle management of AMQ broker instances by introducing a custom resource definition (CRD) for `ActiveMQArtemis`.
+
+=== Requirement:
+
+*   **AMQ Broker Operator Installed**: The Red Hat AMQ Broker Operator must be installed within your OpenShift cluster, either cluster-wide (typically in `openshift-operators` namespace) or in a specific target namespace. It is most commonly installed from the OpenShift OperatorHub.
+
+=== Hands-on Activity: Verify AMQ Broker Operator Installation
+
+Check if the AMQ Broker Operator is already installed in your cluster:
+
+. List installed Operators by checking subscriptions and ClusterServiceVersions (CSVs). For cluster-wide installations, check the `openshift-operators` namespace:
++
+[source,bash]
+----
+oc get subscription -n openshift-operators | grep amq-broker
+oc get csv -n openshift-operators | grep amq-broker
+----
++
+If installed, you should see output indicating the `amq-broker-operator` subscription and its ClusterServiceVersion (CSV) in a `Succeeded` phase. If not found, you will need to install it from the OpenShift OperatorHub before deploying AMQ brokers.
+
+== Networking Configuration
+
+While OpenShift generally handles internal networking, ensuring external access and proper network policies are crucial for client connectivity to AMQ brokers deployed within the cluster.
+
+=== Requirement:
+
+*   **Route / Ingress Controller**: OpenShift's default Ingress Controller (router) should be operational to expose AMQ services externally via OpenShift Routes. These routes provide a publicly accessible hostname and port for external clients to connect.
+*   **Network Policies (Optional but Recommended)**: If network policies are strictly enforced in your cluster, ensure that appropriate policies are in place to allow inbound traffic to the AMQ broker pods (from external clients and potentially other internal applications) and outbound traffic if the broker needs to connect to external services.
+
+=== Hands-on Activity: Verify OpenShift Router Status
+
+Confirm the OpenShift router is functioning correctly:
+
+. Check the status of the OpenShift router pods within the `openshift-ingress` namespace:
++
+[source,bash]
+----
+oc get pods -n openshift-ingress -l app=router
+----
++
+All router pods should be in a `Running` state. If not, investigate the router's health before proceeding.
+
+== Resource Quotas and Limit Ranges (Optional but Recommended)
+
+In shared OpenShift environments, resource quotas and limit ranges are vital for managing resource consumption, preventing resource starvation, and ensuring fair usage across projects.
+
+=== Recommendation:
+
+*   **Sufficient Resource Quotas**: If your project (namespace) has resource quotas defined (for CPU, memory, and persistent volume claims), ensure they are generous enough to accommodate the AMQ broker pods and any other application components you plan to deploy. AMQ brokers can be resource-intensive, especially under heavy load.
+*   **Appropriate Limit Ranges**: Configure Limit Ranges to set default resource requests and limits for pods within the project. This helps ensure AMQ pods receive adequate resources and prevents them from consuming excessive cluster resources.
+
+=== Hands-on Activity: Review Project Quotas (if applicable)
+
+If you suspect resource constraints or are working in a managed, multi-tenant environment:
+
+. Check resource quotas defined for your project:
++
+[source,bash]
+----
+oc get resourcequota -n <your-project-name>
+----
++
+Review the output to confirm that the available CPU, memory, and persistent volume claims are sufficient for your planned AMQ deployment. Pay attention to the `Used` and `Hard` columns.
+
+By systematically addressing these prerequisites and performing the verification steps, you lay a solid foundation for a successful Red Hat AMQ on OpenShift deployment, minimizing potential issues during the installation and configuration phases.

@@ -14,4 +14,93 @@ Red Hat AMQ is a flexible messaging platform that can be used in a variety of sc
 
 - **Hybrid Cloud and Multi-Cloud Deployments**: Red Hat AMQ can be deployed across hybrid and multi-cloud environments, enabling seamless communication between applications running on-premises and in the cloud. This use case is particularly relevant for enterprises undergoing digital transformation, aiming to leverage cloud services while maintaining control over their on-premises infrastructure.
 
-- **Secure and Compliant Messaging**: Red Hat AMQ provides robust security features, including encryption and authentication, making it suitable for use cases that require secure and compliant messaging. This is essential in industries with strict regulatory requirements, such as healthcare and finance, where sensitive data needs to be
+- **Secure and Compliant Messaging**: Red Hat AMQ provides robust security features, including encryption and authentication, making it suitable for use cases that require secure and compliant messaging. This is essential in industries with strict regulatory requirements, such as healthcare and finance, where sensitive data needs to be#  Use cases and scenarios
+
+// tag::amq-use-cases[]
+== Use cases and scenarios for Red Hat AMQ
+
+Understanding the practical applications of Red Hat AMQ is crucial for identifying how it can solve common challenges in modern enterprise architectures. Red Hat AMQ, acting as a robust message-oriented middleware, provides a reliable and scalable backbone for communication between various components, services, and applications. It facilitates loose coupling, asynchronous processing, and event-driven patterns, which are essential for building resilient, responsive, and scalable distributed systems.
+
+Let's explore key use cases and scenarios where Red Hat AMQ on OpenShift excels.
+
+=== Decoupling Microservices and Distributed Systems
+
+**Scenario:** In a microservices architecture, services often need to communicate with each other. Direct synchronous calls (e.g., HTTP REST) can lead to tight coupling, where a failure in one service can cascade and affect others, or where services become dependent on the availability of others. This tightly coupled dependency makes services harder to deploy, scale, and maintain independently.
+
+**Solution with AMQ:** Red Hat AMQ enables services to communicate asynchronously. Instead of making direct calls, a service publishes messages (events or commands) to an AMQ broker, and interested services consume these messages.
+
+*   **Producer:** A service (e.g., an Order Service) places an "Order Placed" message onto a queue or topic in AMQ.
+*   **Consumer:** Other services (e.g., Inventory Service, Shipping Service, Notification Service) subscribe to this queue/topic and process the message independently.
+
+This approach ensures:
+
+*   **Loose Coupling:** Services don't need to know about each other's existence or location. They only need to agree on a message format.
+*   **Resilience:** If a consumer service is temporarily down, AMQ can persist messages, allowing the consumer to process them once it recovers, without affecting the producer.
+*   **Scalability:** Multiple instances of a consumer service can process messages from the same queue in parallel, distributing the workload and increasing throughput.
+*   **Independent Deployment:** Services can be developed, deployed, and scaled independently without impacting others.
+
+=== Asynchronous Task Processing and Work Queues
+
+**Scenario:** Many applications have long-running or resource-intensive tasks that shouldn't block the user interface or primary application flow. Examples include image processing, video encoding, report generation, complex calculations, or sending bulk emails. Directly executing these tasks synchronously can lead to poor user experience (slow responses) and inefficient resource utilization.
+
+**Solution with AMQ:** AMQ can be used to offload these tasks to dedicated background processors using work queues.
+
+*   **Producer:** When a user initiates a long-running task (e.g., uploading a large file for processing), the application quickly places a message containing the task details (e.g., file path, user ID) onto an AMQ queue. It then immediately responds to the user, indicating that the task is in progress.
+*   **Consumer:** A separate worker application or microservice, specifically designed to handle these tasks, continuously monitors the AMQ queue. When a new task message arrives, a worker picks it up, processes it, and then possibly publishes a "Task Completed" message back to AMQ for notifications.
+
+This pattern provides:
+
+*   **Improved Responsiveness:** The main application thread is freed immediately, providing a better user experience.
+*   **Scalability for Background Tasks:** You can easily scale out the number of worker instances based on the load in the queue.
+*   **Reliable Task Execution:** If a worker fails during processing, AMQ's message persistence and acknowledgment mechanisms ensure the message can be redelivered to another worker or handled appropriately, preventing task loss.
+
+=== Event-Driven Architectures and Real-time Data Streaming
+
+**Scenario:** Modern applications often need to react to events in real-time, such as sensor readings, stock price changes, user activity, or payment transactions. Building systems that can process and react to a continuous stream of events from various sources is fundamental to event-driven architectures.
+
+**Solution with AMQ:** Red Hat AMQ, particularly with its support for publish/subscribe models (topics), is ideal for event distribution.
+
+*   **Event Producers:** Systems generate events (e.g., IoT devices publishing sensor data, payment gateways publishing transaction complete events, user interface components publishing user clicks). These events are published to specific AMQ topics.
+*   **Event Consumers:** Multiple independent services or applications can subscribe to these topics to receive and react to relevant events in real-time. For example, a fraud detection service might subscribe to payment events, while an analytics service subscribes to user activity events.
+
+Benefits include:
+
+*   **Real-time Responsiveness:** Immediate propagation of events allows for instant reactions and processing.
+*   **Scalable Event Distribution:** AMQ can handle high volumes of events and efficiently distribute them to numerous subscribers.
+*   **Fan-out Capability:** A single event can trigger multiple independent actions across different services.
+*   **Foundation for Microservices:** Events are a natural way for microservices to communicate without direct dependencies.
+
+=== Data Integration and Bridging Disparate Systems
+
+**Scenario:** Enterprises often have a mosaic of legacy systems, commercial off-the-shelf (COTS) applications, and new microservices, each potentially using different technologies, data formats, and communication protocols. Integrating these disparate systems reliably and efficiently can be a significant challenge.
+
+**Solution with AMQ:** AMQ acts as a central nervous system for data exchange, standardizing communication and providing a reliable transport layer.
+
+*   **Integration Hub:** Legacy systems can publish data updates to AMQ queues or topics. Integration services (e.g., using Apache Camel) can consume these messages, transform them into a common format, and then publish them to other queues/topics for consumption by modern applications.
+*   **Protocol Bridging:** AMQ brokers support multiple messaging protocols (OpenWire, AMQP, STOMP, MQTT), making it easier to connect a wide variety of clients and systems.
+
+This facilitates:
+
+*   **Reduced Complexity:** A common messaging layer simplifies point-to-point integrations.
+*   **Standardized Communication:** Enforces a consistent way of exchanging data across the enterprise.
+*   **Reliable Data Transfer:** Ensures messages are delivered even if target systems are temporarily unavailable.
+*   **Future-proofing:** New applications can easily integrate by simply connecting to AMQ.
+
+=== Load Balancing and Throttling Workloads
+
+**Scenario:** When a system experiences high traffic or bursty workloads, it can become overwhelmed, leading to degraded performance or even outages. There's a need to distribute incoming work evenly across available processing resources and, if necessary, queue work to prevent overwhelming backend systems.
+
+**Solution with AMQ:** AMQ queues naturally provide load balancing and can act as a buffer for throttling.
+
+*   **Work Distribution:** Multiple consumer instances (e.g., 3 instances of a payment processing service) can all connect to the same AMQ queue. AMQ will distribute incoming messages among these available consumers using a competitive consumer pattern, effectively load balancing the work.
+*   **Throttling:** If the rate of incoming messages (producers) exceeds the processing capacity of the consumers, AMQ will queue the excess messages. This acts as a buffer, preventing the backend systems from being overloaded while ensuring all messages are eventually processed once capacity becomes available.
+
+Benefits include:
+
+*   **Even Workload Distribution:** Prevents any single consumer from becoming a bottleneck.
+*   **Resilience to Spikes:** The message queue absorbs bursts of activity, protecting backend services.
+*   **Resource Optimization:** Allows you to provision consumer resources based on average load, with the queue handling peak loads.
+
+These use cases demonstrate the power and versatility of Red Hat AMQ as a foundational component for building modern, resilient, and scalable enterprise applications on OpenShift.
+
+// end::amq-use-cases[]

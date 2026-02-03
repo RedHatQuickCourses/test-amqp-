@@ -34,4 +34,308 @@ Once connected, you can send and receive messages using the Qpid Dispatch Client
    qdsend -c amq-client-config.xml -r <QUEUE_NAME> -b <MESSAGE_BODY>
    ```
 
-   Replace `<QUEUE_NAME>` with the name of the queue you want to send the message to, and `<MESSAGE
+   Replace `<QUEUE_NAME>` with the name of the queue you want to send the message to, and `<MESSAGE#  Accessing AMQ from external clients
+
+= Accessing AMQ from External Clients
+
+This module explains how to enable external clients to connect to Red Hat AMQ brokers deployed on OpenShift. It covers various methods for exposing your AMQ broker and provides a hands-on example of connecting a client.
+
+== Understanding External Access to OpenShift Services
+
+When applications or services are deployed on OpenShift, they typically reside within the cluster's private network. To allow external clients (applications running outside the OpenShift cluster, e.g., on a developer's workstation, another datacenter, or a public cloud) to interact with these services, an "exposure" mechanism is required.
+
+For messaging brokers like Red Hat AMQ, this involves exposing the network ports that the broker listens on (e.g., AMQP on 5672, MQTT on 1883, STOMP on 61613, OpenWire on 61616) to the outside world.
+
+=== OpenShift Service Exposure Mechanisms
+
+OpenShift, built on Kubernetes, provides several robust mechanisms to expose services externally:
+
+*   *Services of Type `ClusterIP` (Default)*: This is the default service type. It exposes the service only within the cluster on an internal IP address. It's not accessible from outside the cluster.
+*   *Services of Type `NodePort`*: This type exposes the service on a static port (the NodePort) across all nodes in the cluster. Clients can then connect to *any* node's IP address on that NodePort. This is a common method for exposing custom TCP/UDP services when a cloud provider's LoadBalancer is not available or desired.
+*   *Services of Type `LoadBalancer`*: In cloud environments (e.g., AWS, Azure, GCP), this service type provisions an external cloud load balancer (if supported by the underlying cloud provider) that directs traffic to the service pods. The load balancer is assigned an external IP address or hostname, providing a stable and scalable entry point.
+*   *Routes*: OpenShift-specific objects that expose services via a user-friendly hostname, typically handling HTTP/HTTPS traffic. Routes can also be configured for TCP passthrough, but for plain, non-HTTP messaging protocols, `NodePort` or `LoadBalancer` services often provide a simpler and more direct connection path for clients expecting to connect on the protocol's native port.
+
+For direct external access to non-HTTP/HTTPS messaging protocols, `Services` of type `NodePort` or `LoadBalancer` are generally preferred for their straightforward external port mapping.
+
+== Exposing AMQ Brokers on OpenShift
+
+When Red Hat AMQ is deployed using the AMQ Broker Operator, the Operator can be configured to create various types of OpenShift `Services` or `Routes` to expose the broker's protocols. However, for direct external access to non-HTTP/HTTPS messaging protocols (like plain AMQP, MQTT, STOMP), using `Services` of type `NodePort` or `LoadBalancer` is often the most direct approach.
+
+Let's assume an AMQ Broker instance named `amq-broker-instance` is running in the `amq-project` namespace.
+
+=== Method: Using Services of Type NodePort (or LoadBalancer)
+
+This method provides a direct TCP connection point for external clients to access the AMQ broker's messaging protocols.
+
+[WARNING]
+====
+Using `NodePort` directly exposes the service on the cluster nodes. Ensure appropriate network security (e.g., firewall rules on the OpenShift nodes and network policies within OpenShift) are in place to restrict access to trusted sources. For production environments, a dedicated external load balancer (via the `LoadBalancer` service type) or an advanced router/gateway solution is generally recommended for enhanced security, scalability, and reliability.
+====
+
+==== Hands-on Activity: Exposing AMQP with a NodePort Service
+
+This activity demonstrates how to create a `NodePort` service to expose the AMQP protocol (port 5672) of your AMQ broker. The same principles apply for exposing other protocols (MQTT on 1883, STOMP on 61613, OpenWire on 61616) by adjusting the `name`, `port`, and `targetPort`.
+
+[NOTE]
+====
+While the AMQ Broker Operator can be configured to create these types of services directly via the `Broker` Custom Resource (CR), for this demonstration, we will create a new Service manually. This approach helps in understanding the underlying Kubernetes objects and their configuration.
+====
+
+1.  *Identify AMQ Broker Pod Labels:*
+    To ensure your `Service` `selector` correctly targets the AMQ Broker pods, first identify the labels of your broker instance.
+
+    [source,bash]
+    ----
+    oc get pod -l app.kubernetes.io/instance=amq-broker-instance -n amq-project -o jsonpath='{.items[0].metadata.labels}'
+    ----
+
+    This command will output a JSON object containing the labels. Look for key-value pairs like `"app.kubernetes.io/name": "amq-broker"`, `"app.kubernetes.io/component": "broker"`, and `"app.kubernetes.io/instance": "amq-broker-instance"`. These will be used in the `selector`.
+
+2.  *Create a NodePort Service Definition:*
+    Create a YAML file named `amq-nodeport-amqp-svc.yaml` with the following content. *Adjust the `selector` section* to precisely match the labels you found in the previous step for your AMQ Broker pods.
+
+    [source,yaml]
+    ----
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: amq-broker-instance-amqp-external-np
+      namespace: amq-project
+      labels:
+        app: amq-external-access
+    spec:
+      type: NodePort
+      selector:
+        app.kubernetes.io/name: amq-broker # Example label, adjust if different
+        app.kubernetes.io/instance: amq-broker-instance # Example label, adjust if different
+        app.kubernetes.io/component: broker # Example label, adjust if different
+      ports:
+        - name: amqp
+          protocol: TCP
+          port: 5672 # The port the Service exposes internally within the cluster
+          targetPort: 5672 # The port on the AMQ Broker pod that listens for AMQP connections
+    ----
+
+3.  *Apply the Service to OpenShift:*
+
+    [source,bash]
+    ----
+    oc apply -f amq-nodeport-amqp-svc.yaml -n amq-project
+    ----
+
+4.  *Verify the NodePort Service and Retrieve Connection Details:*
+    After applying, check the status of the newly created Service to get the assigned NodePort and confirm its external exposure.
+
+    [source,bash]
+    ----
+    oc get svc -n amq-project amq-broker-instance-amqp-external-np
+    ----
+
+    You should see output similar to this:
+    ```
+    NAME                               TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+    amq-broker-instance-amqp-external-np   NodePort   172.30.200.100   <none>        5672:3xxxx/TCP   2m
+    ```
+    Note the `3xxxx` port (e.g., `30400`) in the `PORT(S)` column. This is the *NodePort* that Kubernetes has dynamically allocated. External clients will connect to `NODE_IP:3xxxx`.
+
+    To get the IP addresses of your OpenShift nodes (you can use any of these IPs to connect):
+
+    [source,bash]
+    ----
+    oc get nodes -o wide | grep Ready | awk '{print $6}'
+    ----
+
+    Pick any of the listed IP addresses. For example, if a node's IP is `192.168.1.10` and the NodePort is `30400`, the connection address for your client will be `192.168.1.10:30400`.
+
+    [IMPORTANT]
+    ====
+    *For `LoadBalancer` type:* If your OpenShift cluster is on a cloud provider and you changed `type: NodePort` to `type: LoadBalancer` in the YAML, the `EXTERNAL-IP` field in `oc get svc` would be populated with a public IP address or hostname once the cloud load balancer is provisioned. You would then use this `EXTERNAL-IP` and the `port` (e.g., `5672`) directly, without needing a `NodePort`.
+    ====
+
+== Connecting External Clients to AMQ
+
+Once the AMQ broker is exposed via a `NodePort` or `LoadBalancer` Service, external client applications can connect using the broker's exposed address and port.
+
+To establish a connection, your client application needs to be configured with the following details:
+
+1.  *Broker Address:* The hostname or IP address of the exposed AMQ broker (e.g., a node's IP for `NodePort`, or the `EXTERNAL-IP`/hostname for `LoadBalancer`).
+2.  *Broker Port:* The external port number (e.g., the `NodePort` for a `NodePort` service, or the `port` from the `LoadBalancer` service definition).
+3.  *Credentials:* A valid username and password if AMQ is secured (which is highly recommended for any production environment).
+4.  *TLS/SSL Configuration:* If TLS is enabled on the AMQ broker (also highly recommended), the client needs to be configured to use SSL/TLS and trust the broker's certificate.
+
+=== Hands-on Activity: Connecting with a Simple AMQP Client (Python)
+
+This activity demonstrates how to connect to your exposed AMQ broker using a simple Python AMQP 1.0 client. We will send and receive a message to verify connectivity.
+
+[NOTE]
+====
+This example assumes you have Python 3 and `pip` installed on your client machine (the machine from which you want to connect to OpenShift).
+We will use the `python-qpid-proton` library, which is a robust AMQP 1.0 client.
+====
+
+1.  *Install the AMQP Client Library:*
+    Open a terminal on your client machine and install the `qpid-proton` library:
+
+    [source,bash]
+    ----
+    pip install python-qpid-proton
+    ----
+
+2.  *Gather Connection Parameters:*
+    From the previous "Exposing AMQP with a NodePort Service" activity:
+
+    *   *Node IP:* Choose one of your OpenShift node IP addresses (e.g., `192.168.1.10`).
+    *   *NodePort:* Note the dynamically allocated NodePort (e.g., `30400`).
+    *   *AMQ User/Password:* For this example, let's assume a user `amq_user` with password `supersecret`. *In a real scenario, use secure credentials configured in AMQ.*
+
+    Your connection URL will be in the format: `amqp://<username>:<password>@<node_ip>:<node_port>/<queue_name>`.
+
+3.  *Create a Python Sender Script:*
+    Create a file named `amqp_sender.py`:
+
+    [source,python]
+    ----
+    #!/usr/bin/env python
+
+    from proton.handlers import MessagingHandler
+    from proton.reactor import Container
+    from proton import Message
+
+    # --- CONFIGURE THESE PARAMETERS ---
+    BROKER_HOST = "192.168.1.10" # Replace with your OpenShift Node IP or LoadBalancer IP/Hostname
+    BROKER_PORT = 30400          # Replace with your NodePort or LoadBalancer Port (e.g., 5672 for LoadBalancer)
+    AMQ_USER = "amq_user"        # Replace with your AMQ username
+    AMQ_PASSWORD = "supersecret" # Replace with your AMQ password
+    QUEUE_NAME = "myQueue"       # The queue to send messages to
+    MESSAGE_COUNT = 1            # Number of messages to send
+    # ----------------------------------
+
+    class Sender(MessagingHandler):
+        def __init__(self, conn_url, queue_name, message_count):
+            super(Sender, self).__init__()
+            self.conn_url = conn_url
+            self.queue_name = queue_name
+            self.message_count = message_count
+            self.sent_count = 0
+            self.confirmed_count = 0
+            self.total_messages = message_count
+
+        def on_start(self, event):
+            print(f"Connecting to {self.conn_url}")
+            event.container.connect(self.conn_url, container_id="amqp_sender")
+            self.sender = event.container.create_sender(event.connection, self.queue_name)
+
+        def on_sendable(self, event):
+            while self.sender.credit and self.sent_count < self.total_messages:
+                message_body = f"Hello from Python client! Message {self.sent_count + 1}"
+                msg = Message(body=message_body)
+                event.sender.send(msg)
+                print(f"Sent: {message_body}")
+                self.sent_count += 1
+            if self.sent_count == self.total_messages:
+                self.sender.close()
+
+        def on_accepted(self, event):
+            self.confirmed_count += 1
+            if self.confirmed_count == self.total_messages:
+                print(f"All {self.total_messages} messages confirmed. Closing connection.")
+                event.connection.close()
+
+        def on_transport_error(self, event):
+            print(f"Transport error: {event.transport.condition}")
+            event.connection.close()
+
+        def on_connection_error(self, event):
+            print(f"Connection error: {event.connection.condition}")
+            event.connection.close()
+
+        def on_disconnected(self, event):
+            print(f"Disconnected from {self.conn_url}")
+
+    if __name__ == "__main__":
+        conn_url = f"amqp://{AMQ_USER}:{AMQ_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}"
+        Container(Sender(conn_url, QUEUE_NAME, MESSAGE_COUNT)).run()
+    ----
+
+4.  *Create a Python Receiver Script:*
+    Create a file named `amqp_receiver.py`:
+
+    [source,python]
+    ----
+    #!/usr/bin/env python
+
+    from proton.handlers import MessagingHandler
+    from proton.reactor import Container
+    from proton import Message
+
+    # --- CONFIGURE THESE PARAMETERS ---
+    BROKER_HOST = "192.168.1.10" # Replace with your OpenShift Node IP or LoadBalancer IP/Hostname
+    BROKER_PORT = 30400          # Replace with your NodePort or LoadBalancer Port (e.g., 5672 for LoadBalancer)
+    AMQ_USER = "amq_user"        # Replace with your AMQ username
+    AMQ_PASSWORD = "supersecret" # Replace with your AMQ password
+    QUEUE_NAME = "myQueue"       # The queue to receive messages from
+    # ----------------------------------
+
+    class Receiver(MessagingHandler):
+        def __init__(self, conn_url, queue_name):
+            super(Receiver, self).__init__()
+            self.conn_url = conn_url
+            self.queue_name = queue_name
+            self.received_count = 0
+
+        def on_start(self, event):
+            print(f"Connecting to {self.conn_url}")
+            event.container.connect(self.conn_url, container_id="amqp_receiver")
+            self.receiver = event.container.create_receiver(event.connection, self.queue_name)
+
+        def on_message(self, event):
+            self.received_count += 1
+            print(f"Received: {event.message.body}")
+            event.delivery.accept() # Acknowledge the message
+            # For this example, we'll exit after receiving one message.
+            # In a real app, you might keep listening or have a count or loop.
+            event.connection.close()
+
+        def on_transport_error(self, event):
+            print(f"Transport error: {event.transport.condition}")
+            event.connection.close()
+
+        def on_connection_error(self, event):
+            print(f"Connection error: {event.connection.condition}")
+            event.connection.close()
+
+        def on_disconnected(self, event):
+            print(f"Disconnected from {self.conn_url}")
+
+    if __name__ == "__main__":
+        conn_url = f"amqp://{AMQ_USER}:{AMQ_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}"
+        Container(Receiver(conn_url, QUEUE_NAME)).run()
+    ----
+
+5.  *Run the Receiver and Sender:*
+
+    a.  First, start the receiver in one terminal:
+        [source,bash]
+        ----
+        python amqp_receiver.py
+        ----
+        The receiver will connect and wait for messages.
+
+    b.  In a separate terminal, run the sender:
+        [source,bash]
+        ----
+        python amqp_sender.py
+        ----
+
+    You should see the sender outputting "Sent: ..." and the receiver outputting "Received: ...". Both scripts should then disconnect. This confirms that your external client can successfully connect to the AMQ broker on OpenShift and exchange messages.
+
+[TIP]
+====
+*   *Troubleshooting Connectivity:* If you encounter connection issues, verify:
+    *   The `BROKER_HOST` and `BROKER_PORT` in your Python scripts are correct.
+    *   Network connectivity between your client machine and the OpenShift nodes (e.g., `ping <NODE_IP>`, `telnet <NODE_IP> <NODE_PORT>`).
+    *   Firewall rules on your OpenShift nodes or external network are not blocking the `NodePort`.
+    *   The AMQ Broker pod is running and healthy: `oc get pod -l app.kubernetes.io/instance=amq-broker-instance -n amq-project`.
+    *   AMQ user credentials are correct and the queue exists.
+*   *TLS/SSL:* For production, always enable TLS on your AMQ broker (as covered in a previous module) and configure your client to connect securely using `amqps://` and appropriate certificate trust stores.
+====

@@ -31,4 +31,626 @@ To secure AMQ with external Identity Providers, follow these steps:
 
 1. **Set up RH-SSO:** Install and configure RH-SSO with appropriate realms, users, and roles.
 2. **Configure AMQ Broker:** Update the AMQ broker configuration to use RH-SSO as the security realm and OAuth2 provider.
-3. **
+3. **#  Securing AMQ with external Identity Providers
+
+= Securing AMQ with External Identity Providers
+
+As enterprises grow, managing user identities and access across numerous applications becomes a significant challenge. Centralized authentication and authorization are paramount for security, compliance, and operational efficiency. This section delves into securing your Red Hat AMQ deployment on OpenShift by integrating it with external Identity Providers (IDPs), allowing for unified user management and enhanced security posture.
+
+== Why External Identity Providers for AMQ?
+
+Integrating Red Hat AMQ with an external Identity Provider offers several compelling advantages:
+
+*   *Centralized User Management:* Instead of managing user accounts directly within AMQ (which is possible but cumbersome at scale), users are managed in a central IDP. This simplifies user onboarding, offboarding, and credential management across your organization's applications.
+*   *Single Sign-On (SSO):* Users can authenticate once with the IDP and gain access to multiple integrated applications, including AMQ, without re-entering credentials. This significantly improves user experience and reduces password fatigue.
+*   *Enhanced Security:* IDPs often provide advanced security features like Multi-Factor Authentication (MFA), adaptive authentication, and robust password policies, which are then leveraged by AMQ.
+*   *Role-Based Access Control (RBAC):* IDPs can manage user groups and roles. These roles can then be mapped to AMQ's internal authorization mechanisms, allowing fine-grained control over who can access which queues, topics, or management operations.
+*   *Compliance:* Many regulatory frameworks mandate centralized identity management and robust authentication practices, which external IDPs help achieve.
+
+== Integration Overview: AMQ Broker and External IDPs on OpenShift
+
+When deploying Red Hat AMQ Broker on OpenShift, securing it with an external IDP typically involves leveraging OpenShift's capabilities and the AMQ Broker Operator. The most common external IDP used in Red Hat environments is Red Hat Single Sign-On (RH-SSO), which is based on the open-source Keycloak project.
+
+The integration generally follows this pattern:
+
+1.  **External Identity Provider (e.g., Keycloak):** Manages user identities, credentials, groups, and roles. It acts as the authoritative source for authentication.
+2.  **OpenShift OAuth/Router:** OpenShift can be configured to use an external IDP for authenticating users accessing OpenShift itself. While this secures the *OpenShift console*, it's distinct from how AMQ Broker secures its *messaging endpoints*.
+3.  **AMQ Broker (ActiveMQ Artemis) Custom Resource (CR):** The AMQ Broker Operator simplifies the deployment and configuration of AMQ Broker instances. To integrate with an external IDP, you modify the `Broker` custom resource to instruct the broker on how to authenticate against the IDP. This typically involves:
+    *   Configuring a security domain within the broker that points to the external IDP.
+    *   Specifying the protocol for communication (e.g., OpenID Connect - OIDC).
+    *   Defining how roles obtained from the IDP map to internal AMQ roles for authorization.
+4.  **Client Applications:** Messaging clients (e.g., Java, Python, Node.js applications) will obtain tokens (e.g., JWTs) from the external IDP. These tokens are then presented to the AMQ Broker during connection setup for authentication.
+
+image::amq-external-idp-flow.png[AMQ Broker External IDP Flow, align="center"]
+_Figure: Simplified flow for AMQ Broker integration with an external IDP_
+
+== Detailed Technical Explanation: Configuring AMQ Broker for External IDP
+
+Let's walk through the technical aspects of integrating Red Hat AMQ Broker with an external Identity Provider like Keycloak, focusing on OpenID Connect (OIDC).
+
+=== Keycloak Setup (Prerequisites)
+
+Before configuring AMQ Broker, ensure your Keycloak instance is properly set up:
+
+1.  **Realm Creation:** Create a dedicated realm in Keycloak for your AMQ applications.
+2.  **Client Registration:** Register a client application in Keycloak for your AMQ Broker. This client will represent the AMQ Broker itself when interacting with Keycloak.
+    *   Set the `Access Type` to `confidential`.
+    *   Configure a `Valid Redirect URI` (though less critical for broker-side OIDC, good practice).
+    *   Ensure a client secret is generated.
+3.  **User and Role Management:** Create users and assign them to roles within your Keycloak realm. These roles will be used for authorization in AMQ. For example, `amq-admin`, `amq-producer`, `amq-consumer`.
+4.  **Client Scopes:** Define client scopes that include roles or group memberships to be conveyed in the JWT token issued by Keycloak. This is crucial for AMQ to perform role mapping.
+
+=== AMQ Broker Custom Resource Configuration for OIDC
+
+The AMQ Broker Operator allows you to configure security domains directly within the `Broker` Custom Resource (CR). You'll typically add a `security` block to your `Broker` CR.
+
+The core idea is to define a security domain that uses the `keycloak` plugin (which leverages OIDC) and then map the roles provided by Keycloak to AMQ's internal authorization system.
+
+Here's a conceptual snippet of a `Broker` CR focusing on the `security` configuration for Keycloak/OIDC:
+
+[source,yaml]
+----
+apiVersion: broker.amq.redhat.com/v1beta1
+kind: Broker
+metadata:
+  name: my-amq-broker
+spec:
+  # ... other broker configurations ...
+  deploymentPlan:
+    size: 1
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.10
+    # ...
+  security:
+    enabled: true
+    loginModules:
+      - name: keycloak-login-module
+        type: keycloak
+        config:
+          # The Keycloak server's auth endpoint
+          auth-server-url: "https://keycloak.your-domain.com/auth"
+          # The realm where your AMQ client is configured
+          realm: "your-amq-realm"
+          # The client ID registered in Keycloak for this AMQ Broker
+          resource: "amq-broker-client"
+          # This should match the name of a role in Keycloak that grants administrative access
+          role-principal-classes: "org.keycloak.representations.AccessToken$Access" # Or a custom role mapper class
+          # If your Keycloak client uses a secret (confidential access type)
+          credentials:
+            secret: "amq-keycloak-client-secret" # Refers to an OpenShift Secret containing the client secret
+
+    authorization:
+      # Define roles and their permissions
+      roles:
+        - name: amq-admin
+          send: true
+          consume: true
+          createNonDurableQueue: true
+          deleteNonDurableQueue: true
+          createDurableQueue: true
+          deleteDurableQueue: true
+          manage: true
+        - name: amq-producer
+          send: true
+          createNonDurableQueue: true
+        - name: amq-consumer
+          consume: true
+          
+      # Map Keycloak roles/groups to AMQ internal roles
+      roleMappings:
+        - name: amq-admin
+          roles:
+            - amq-admin # Map Keycloak 'amq-admin' role to AMQ 'amq-admin'
+        - name: amq-producer
+          roles:
+            - amq-producer
+        - name: amq-consumer
+          roles:
+            - amq-consumer
+----
+
+*   **`loginModules`**: This section defines how the AMQ Broker authenticates users.
+    *   `name`: A unique name for this login module.
+    *   `type: keycloak`: Specifies that we're using the Keycloak/OIDC integration.
+    *   `config`: Contains the Keycloak-specific configuration parameters:
+        *   `auth-server-url`: The base URL of your Keycloak server (e.g., `https://keycloak.your-domain.com/auth`).
+        *   `realm`: The name of the Keycloak realm where your AMQ client is defined.
+        *   `resource`: The `Client ID` of the AMQ Broker client registered in Keycloak.
+        *   `role-principal-classes`: This is critical. It tells AMQ where to find the role information within the JWT token issued by Keycloak. Often, Keycloak roles are directly available in the `roles` claim or within `resource_access.<client-id>.roles`. The exact value might depend on your Keycloak setup and if you're using custom mappers.
+        *   `credentials.secret`: References an OpenShift `Secret` that holds the client secret for the Keycloak client. The Secret itself would look like this:
+            [source,yaml]
+            ----
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: amq-keycloak-client-secret
+            type: Opaque
+            stringData:
+              clientSecret: "YOUR_KEYCLOAK_CLIENT_SECRET"
+            ----
+*   **`authorization`**: This block defines the authorization rules *within* AMQ.
+    *   `roles`: Here, you define the *internal* roles that AMQ will use (e.g., `amq-admin`, `amq-producer`, `amq-consumer`) and the permissions associated with each (e.g., `send`, `consume`, `manage`).
+    *   `roleMappings`: This is where the magic happens for mapping. It takes the roles asserted by the external IDP (Keycloak) and maps them to the internal AMQ roles you defined. In the example, a user who has the `amq-admin` role in Keycloak will be granted the `amq-admin` permissions defined in AMQ.
+
+=== How Clients Connect
+
+Once the AMQ Broker is configured for OIDC, client applications will no longer connect with simple usernames and passwords directly to AMQ. Instead, they will:
+
+1.  Authenticate with Keycloak (e.g., via browser redirect for web apps, or direct API calls for backend services) to obtain an OIDC ID Token and/or Access Token (JWT).
+2.  Use this JWT as the password when connecting to the AMQ Broker. The username might be arbitrary or derived from the token's subject. The AMQ Broker's Keycloak login module will then validate this JWT with Keycloak, extract the roles, and apply the corresponding permissions.
+
+For Java JMS clients, this typically involves setting properties like `jms.oauth.bearer.token` or similar mechanism provided by the AMQ client libraries.
+
+[source,java]
+----
+import org.apache.qpid.jms.JmsConnectionFactory;
+import javax.jms.*;
+
+public class OidcAmqClient {
+
+    public static void main(String[] args) throws JMSException {
+        // Assume you have already obtained the JWT token from Keycloak
+        String jwtToken = "YOUR_KEYCLOAK_JWT_TOKEN"; // This needs to be dynamically obtained
+
+        // AMQ Broker connection URL
+        String brokerUrl = "amqp+ssl://your-amq-broker-route-host:443";
+
+        // Create a connection factory
+        JmsConnectionFactory connectionFactory = new JmsConnectionFactory(brokerUrl);
+
+        // Set the JWT token as the password (username can be anything, it's ignored by OIDC login module)
+        Connection connection = connectionFactory.createConnection("anyuser", jwtToken);
+        connection.start();
+
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue queue = session.createQueue("my-secure-queue");
+
+        // Example: Send a message (requires 'send' permission)
+        MessageProducer producer = session.createProducer(queue);
+        TextMessage message = session.createTextMessage("Hello from secured client!");
+        producer.send(message);
+        System.out.println("Sent message: " + message.getText());
+
+        // Example: Consume a message (requires 'consume' permission)
+        MessageConsumer consumer = session.createConsumer(queue);
+        Message receivedMessage = consumer.receive(1000);
+        if (receivedMessage instanceof TextMessage) {
+            TextMessage textMessage = (TextMessage) receivedMessage;
+            System.out.println("Received message: " + textMessage.getText());
+        }
+
+        session.close();
+        connection.close();
+    }
+}
+----
+
+[[hands-on-securing-amq-idp]]
+== Hands-on Activity: Integrating AMQ Broker with Keycloak on OpenShift
+
+This hands-on lab guides you through configuring an AMQ Broker on OpenShift to authenticate and authorize users using Keycloak (Red Hat SSO) as an external Identity Provider.
+
+=== Lab Prerequisites
+
+*   An active OpenShift cluster where you have administrator privileges.
+*   The Red Hat AMQ Broker Operator installed on your cluster.
+*   An existing Red Hat AMQ Broker instance deployed (from previous labs, e.g., named `my-amq-broker` in the `amq-project` namespace).
+*   A deployed Keycloak/Red Hat SSO instance accessible from your OpenShift cluster. You will need its base URL and administrative credentials.
+    *   If you don't have one, consider deploying a simple Keycloak instance on OpenShift for this lab.
+
+=== Step 1: Deploy Keycloak/Red Hat SSO (if not already)
+
+If you already have a Keycloak instance, skip to Step 2. Otherwise, deploy a basic Keycloak instance on your OpenShift cluster.
+
+. Create a new project for Keycloak:
++
+[source,bash]
+----
+oc new-project keycloak-project
+----
+
+. Deploy Keycloak using the Operator or a template. A simple example using a template:
++
+[source,bash]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: Template
+metadata:
+  name: keycloak-ephemeral
+objects:
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    labels:
+      app: keycloak
+    name: keycloak
+  spec:
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: keycloak
+      weight: 100
+    wildcardPolicy: None
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: keycloak
+    name: keycloak
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: keycloak
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: keycloak
+    name: keycloak
+  spec:
+    replicas: 1
+    selector:
+      app: keycloak
+    strategy:
+      resources: {}
+    template:
+      metadata:
+        labels:
+          app: keycloak
+      spec:
+        containers:
+        - env:
+          - name: KEYCLOAK_USER
+            value: admin
+          - name: KEYCLOAK_PASSWORD
+            value: password123
+          - name: DB_VENDOR
+            value: h2
+          - name: DB_URL
+            value: jdbc:h2:mem:keycloak;DB_CLOSE_DELAY=-1
+          image: registry.redhat.io/keycloak/keycloak:latest # Or a specific version
+          name: keycloak
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8443
+            protocol: TCP
+          resources: {}
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - keycloak
+        from:
+          kind: ImageStreamTag
+          name: keycloak:latest
+          namespace: openshift
+      type: ImageChange
+EOF
+----
++
+. Wait for Keycloak to deploy and become ready.
+. Get the Keycloak route URL:
++
+[source,bash]
+----
+oc get route keycloak -n keycloak-project -o jsonpath='{.spec.host}'
+----
++
+Save this URL; it will be your `KEYCLOAK_URL`. Access it in your browser and log in with `admin`/`password123`.
+
+=== Step 2: Configure Keycloak Realm, Client, Users, and Roles
+
+In your Keycloak instance, perform the following steps:
+
+. **Create a new Realm:**
+    *   Log in to the Keycloak Admin Console.
+    *   Hover over "Master" in the top-left corner and click "Add realm".
+    *   Name it `amq-realm`. Click "Create".
+. **Create a Client for AMQ Broker:**
+    *   Navigate to your `amq-realm`.
+    *   Go to `Clients` -> `Create client`.
+    *   `Client ID`: `amq-broker-client`
+    *   `Client Protocol`: `openid-connect`
+    *   Click `Save`.
+    *   On the client settings page, set `Access Type` to `confidential`.
+    *   Enable `Service Accounts Enabled`: `ON` (Optional, good for programmatic access).
+    *   Click `Save`.
+    *   Go to the `Credentials` tab for `amq-broker-client`. Copy the `Secret`. This is `YOUR_KEYCLOAK_CLIENT_SECRET`.
+. **Create Roles:**
+    *   Go to `Roles` -> `Add Role`.
+    *   Create roles: `amq-admin`, `amq-producer`, `amq-consumer`.
+. **Create Users and Assign Roles:**
+    *   Go to `Users` -> `Add user`.
+    *   Create a user, e.g., `amquser`. Set a password on the `Credentials` tab.
+    *   Go to the `Role Mappings` tab for `amquser`.
+    *   Assign `amq-producer` and `amq-consumer` from `Available Roles` to `Assigned Roles`.
+    *   Create another user, e.g., `amqadmin`. Set a password.
+    *   Assign `amq-admin` from `Available Roles` to `Assigned Roles`.
+
+=== Step 3: Update AMQ Broker Custom Resource for OIDC Integration
+
+Now, let's configure your AMQ Broker to use this Keycloak setup.
+
+. Switch back to your AMQ project:
++
+[source,bash]
+----
+oc project amq-project
+----
+
+. Create an OpenShift Secret to hold the Keycloak client secret:
++
+[source,bash]
+----
+oc create secret generic amq-keycloak-client-secret --from-literal=clientSecret='YOUR_KEYCLOAK_CLIENT_SECRET_FROM_KEYCLOAK' -n amq-project
+----
++
+Replace `YOUR_KEYCLOAK_CLIENT_SECRET_FROM_KEYCLOAK` with the secret you copied in Step 2.
+
+. Edit your existing `Broker` Custom Resource. Replace `my-amq-broker` with the actual name of your broker instance.
++
+[source,bash]
+----
+oc edit broker my-amq-broker -n amq-project
+----
+
+. Locate the `spec` section and add or modify the `security` block as follows. Make sure to replace `KEYCLOAK_URL` with the actual route host of your Keycloak instance (e.g., `https://keycloak-keycloak-project.apps.cluster.example.com/auth`).
++
+[source,yaml]
+----
+# ... (existing Broker CR content) ...
+spec:
+  # ... existing deploymentPlan, etc. ...
+  security:
+    enabled: true
+    loginModules:
+      - name: keycloak-login-module
+        type: keycloak
+        config:
+          auth-server-url: "KEYCLOAK_URL" # e.g., "https://keycloak-keycloak-project.apps.cluster.example.com/auth"
+          realm: "amq-realm"
+          resource: "amq-broker-client"
+          role-principal-classes: "org.keycloak.representations.AccessToken$Access" # Standard for Keycloak roles
+          credentials:
+            secret: "amq-keycloak-client-secret" # References the Secret created above
+
+    authorization:
+      roles:
+        - name: amq-admin
+          send: true
+          consume: true
+          createNonDurableQueue: true
+          deleteNonDurableQueue: true
+          createDurableQueue: true
+          deleteDurableQueue: true
+          manage: true
+          view: true
+        - name: amq-producer
+          send: true
+          createNonDurableQueue: true
+          view: true
+        - name: amq-consumer
+          consume: true
+          view: true
+      roleMappings:
+        - name: amq-admin
+          roles:
+            - amq-admin # Map Keycloak 'amq-admin' role to AMQ 'amq-admin'
+        - name: amq-producer
+          roles:
+            - amq-producer
+        - name: amq-consumer
+          roles:
+            - amq-consumer
+----
++
+. Save the changes to the `Broker` CR. The AMQ Broker Operator will detect the changes and roll out a new broker pod with the updated security configuration. Monitor the pod status:
++
+[source,bash]
+----
+oc get pods -w -n amq-project
+----
++
+Wait until the broker pod is `Running` and `Ready`.
+
+=== Step 4: Obtain a JWT Token from Keycloak for Client Testing
+
+To test, you need a JWT token from Keycloak. For simplicity in a lab environment, you can use `curl` or a tool like Postman to get a token via the `password` grant type.
+
+. Using `curl` to get a token for `amquser`:
++
+[source,bash]
+----
+KEYCLOAK_TOKEN_ENDPOINT="KEYCLOAK_URL/realms/amq-realm/protocol/openid-connect/token"
+CLIENT_ID="amq-broker-client"
+CLIENT_SECRET_VALUE="YOUR_KEYCLOAK_CLIENT_SECRET" # Ensure this is the actual client secret
+
+curl -X POST "$KEYCLOAK_TOKEN_ENDPOINT" \
+-H "Content-Type: application/x-www-form-urlencoded" \
+-d "grant_type=password&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET_VALUE&username=amquser&password=password" \
+| jq -r .access_token
+----
++
+Replace `KEYCLOAK_URL` and `YOUR_KEYCLOAK_CLIENT_SECRET`. Copy the resulting JWT token. This token belongs to `amquser` who has `amq-producer` and `amq-consumer` roles.
+
+. Repeat for `amqadmin` to get a token with `amq-admin` role.
+
+=== Step 5: Test Client Connection with External IDP Credentials
+
+Now, let's use the obtained JWT token to connect to AMQ.
+
+. Get the AMQ Broker's external route host:
++
+[source,bash]
+----
+oc get route my-amq-broker-amqp -n amq-project -o jsonpath='{.spec.host}'
+----
++
+Save this as `AMQ_BROKER_HOST`.
+
+. Create a simple Java client (ensure you have the `qpid-jms-client` dependency in your `pom.xml` if using Maven).
+
++
+[source,xml]
+.pom.xml
+----
+<dependencies>
+    <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-jms-client</artifactId>
+        <version>0.63.0</version> <!-- Use a version compatible with your AMQ Broker -->
+    </dependency>
+    <!-- Add for JSON processing if needed -->
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.13.0</version>
+    </dependency>
+</dependencies>
+----
+
++
+[source,java]
+.SecureAmqClient.java
+----
+import org.apache.qpid.jms.JmsConnectionFactory;
+import javax.jms.*;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
+public class SecureAmqClient {
+
+    private static final Logger LOGGER = Logger.getLogger(SecureAmqClient.class.getName());
+
+    public static void main(String[] args) {
+        if (args.length < 3) {
+            LOGGER.log(Level.SEVERE, "Usage: java SecureAmqClient <brokerUrl> <jwtToken> <queueName>");
+            System.exit(1);
+        }
+
+        String brokerUrl = args[0];
+        String jwtToken = args[1];
+        String queueName = args[2];
+
+        Connection connection = null;
+        Session session = null;
+        MessageProducer producer = null;
+        MessageConsumer consumer = null;
+
+        try {
+            LOGGER.log(Level.INFO, "Connecting to AMQ Broker at: {0}", brokerUrl);
+            JmsConnectionFactory connectionFactory = new JmsConnectionFactory(brokerUrl);
+
+            // The username doesn't matter much for OIDC, as authentication is based on the JWT token.
+            // Some clients might still expect a username argument, so 'anyuser' is a common placeholder.
+            connection = connectionFactory.createConnection("anyuser", jwtToken);
+            connection.start();
+            LOGGER.log(Level.INFO, "Connection established successfully.");
+
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Queue queue = session.createQueue(queueName);
+
+            // --- Test Producer (requires 'send' permission) ---
+            producer = session.createProducer(queue);
+            TextMessage message = session.createTextMessage("Hello from secured client using token!");
+            producer.send(message);
+            LOGGER.log(Level.INFO, "Sent message: {0} to queue: {1}", new Object[]{message.getText(), queueName});
+
+            // --- Test Consumer (requires 'consume' permission) ---
+            consumer = session.createConsumer(queue);
+            LOGGER.log(Level.INFO, "Waiting for message on queue: {0}", queueName);
+            Message receivedMessage = consumer.receive(5000); // Wait up to 5 seconds
+            if (receivedMessage instanceof TextMessage) {
+                TextMessage textMessage = (TextMessage) receivedMessage;
+                LOGGER.log(Level.INFO, "Received message: {0} from queue: {1}", new Object[]{textMessage.getText(), queueName});
+            } else if (receivedMessage == null) {
+                LOGGER.log(Level.WARNING, "No message received within timeout.");
+            } else {
+                LOGGER.log(Level.INFO, "Received non-text message: {0}", receivedMessage.getClass().getName());
+            }
+
+        } catch (JMSSecurityException e) {
+            LOGGER.log(Level.SEVERE, "JMS Security Error: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "This often means the token is invalid or the user lacks permissions.");
+        } catch (JMSException e) {
+            LOGGER.log(Level.SEVERE, "JMS Error: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "General Error: " + e.getMessage(), e);
+        } finally {
+            try {
+                if (producer != null) producer.close();
+                if (consumer != null) consumer.close();
+                if (session != null) session.close();
+                if (connection != null) connection.close();
+                LOGGER.log(Level.INFO, "Client resources closed.");
+            } catch (JMSException e) {
+                LOGGER.log(Level.SEVERE, "Error closing JMS resources: " + e.getMessage(), e);
+            }
+        }
+    }
+}
+----
+
+. Compile and run the client:
++
+[source,bash]
+----
+# Compile
+javac -cp "path/to/qpid-jms-client.jar" SecureAmqClient.java
+
+# Run with amquser's token (should succeed for send/consume on 'my-secure-queue')
+java -cp ".:path/to/qpid-jms-client.jar" SecureAmqClient "amqp+ssl://AMQ_BROKER_HOST:443" "AMQUSER_JWT_TOKEN" "my-secure-queue"
+
+# Run with amqadmin's token (should also succeed, as admin has all permissions)
+java -cp ".:path/to/qpid-jms-client.jar" SecureAmqClient "amqp+ssl://AMQ_BROKER_HOST:443" "AMQADMIN_JWT_TOKEN" "my-secure-queue"
+----
++
+*Expected Output:* The client should successfully connect, send a message, and receive it back.
+
+. *Test Unauthorized Access:*
+    *   Create a new role in Keycloak, e.g., `unauthorized-role`.
+    *   Create a new user, `unauthuser`, and assign only `unauthorized-role`.
+    *   Obtain a JWT token for `unauthuser`.
+    *   Run the `SecureAmqClient` using `unauthuser`'s token.
++
+[source,bash]
+----
+# Run with unauthuser's token (should fail with JMSSecurityException)
+java -cp ".:path/to/qpid-jms-client.jar" SecureAmqClient "amqp+ssl://AMQ_BROKER_HOST:443" "UNAUTHUSER_JWT_TOKEN" "my-secure-queue"
+----
++
+*Expected Output:* The client should fail with a `JMSSecurityException`, indicating that the user is not authorized to perform the requested operations on the queue. This confirms that AMQ Broker is successfully enforcing authorization based on roles from Keycloak.
+
+=== Verification of Successful Deployment
+
+*   **Broker Logs:** Check the AMQ Broker pod logs. You should see messages indicating the Keycloak login module loading successfully and processing authentication requests.
+    [source,bash]
+    ----
+    oc logs -f my-amq-broker-ss-0 -n amq-project
+    ----
+*   **Client Behavior:** Successful client connections and message operations (send/receive) for authorized users, and security exceptions for unauthorized users, confirm the integration is working as expected.
+
+== Troubleshooting Guidance
+
+*   **Incorrect Keycloak URL/Realm/Client ID:** Double-check the `auth-server-url`, `realm`, and `resource` values in your `Broker` CR. A typo here will prevent the broker from talking to Keycloak.
+*   **Invalid Client Secret:** Ensure the `amq-keycloak-client-secret` OpenShift Secret contains the correct client secret from Keycloak. The base64 encoding or a `stringData` error can cause issues.
+*   **Keycloak Network Accessibility:** Verify that your AMQ Broker pod can reach the Keycloak instance. Check network policies and OpenShift routes/services.
+*   **Role Mapping Issues:**
+    *   Ensure the `role-principal-classes` in the `Broker` CR accurately points to where Keycloak stores roles in the JWT.
+    *   Verify that the roles defined in Keycloak match the `name` under `authorization.roleMappings` in the `Broker` CR.
+    *   Check that users in Keycloak are indeed assigned the roles you expect.
+*   **Expired or Invalid JWT Token:** Client tokens have a limited lifetime. If testing with a stale token, Keycloak will reject it. Re-obtain a fresh token.
+*   **Client Library Compatibility:** Ensure your AMQ client library version is compatible with the AMQ Broker version and supports OIDC/bearer token authentication.
+
+By following these steps, you establish a robust and centralized security mechanism for your Red Hat AMQ deployment on OpenShift, leveraging the power of external Identity Providers like Keycloak.

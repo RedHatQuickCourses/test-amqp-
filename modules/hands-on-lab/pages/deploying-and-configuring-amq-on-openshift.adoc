@@ -52,4 +52,428 @@ After deploying AMQ on OpenShift, you can configure it according to your require
 2. **Set Up Queues and Exchanges**:
    Create queues and exchanges using the AMQ Management Console or the `qdmanage` tool. For example, to create a queue named "example-queue":
    ```
-   qd
+   qd#  Deploying and configuring AMQ on OpenShift
+
+This module focuses on the practical aspects of deploying and configuring Red Hat AMQ on an OpenShift cluster. You will learn about the necessary prerequisites, step-by-step deployment procedures, and essential configuration tasks to ensure your AMQ brokers are robust, secure, and ready for your enterprise messaging requirements.
+
+[[section-prerequisites]]
+== Prerequisites for AMQ Deployment on OpenShift
+
+Before proceeding with the deployment of Red Hat AMQ on OpenShift, ensure the following foundational prerequisites are in place:
+
+*   *OpenShift Cluster Access*: You must have access to an OpenShift cluster (version 4.x or later) with sufficient administrative or developer privileges. These privileges are essential for creating projects, deploying Operators, and managing various OpenShift resources.
+*   *OpenShift CLI (`oc`)*: The OpenShift command-line interface tool (`oc`) needs to be installed on your local machine and configured to authenticate and interact with your target OpenShift cluster.
+*   *Operator Lifecycle Manager (OLM)*: OpenShift's OLM is a fundamental component for managing cloud-native applications. It facilitates the discovery, installation, and upgrade of Operators. Ensure OLM is operational and healthy on your cluster, as it is used to deploy the AMQ Broker Operator.
+*   *Storage Provisioner*: AMQ brokers, especially in production environments, rely on persistent storage to ensure message durability and broker state persistence across restarts. Your OpenShift cluster must have a default `StorageClass` configured for dynamic provisioning, or you must have a specific `StorageClass` available (e.g., `ocs-storagecluster-cephfs`, `nfs-client`, `gp2`) that you can explicitly use.
+*   *Dedicated Project/Namespace*: It is a recommended practice to create a dedicated OpenShift project (namespace) where your AMQ resources will reside. This promotes better resource isolation, simplifies management, and enhances security.
+
+[[section-deployment-steps]]
+== Steps to Deploy AMQ on OpenShift
+
+Red Hat AMQ can be deployed on OpenShift using its respective Operators, which automate the deployment and management lifecycle. The primary AMQ offerings are *AMQ Broker* (based on Apache ActiveMQ Artemis, providing traditional message queues and topics) and *AMQ Streams* (based on Apache Kafka, for high-throughput stream processing). For the scope of this module, we will focus on deploying *AMQ Broker*.
+
+This hands-on activity will guide you through the process of installing the AMQ Broker Operator and subsequently deploying an AMQ Broker instance.
+
+=== Hands-on Activity: Deploying the AMQ Broker Operator and Instance
+
+Follow these steps to deploy a Red Hat AMQ Broker on your OpenShift cluster.
+
+. Create a New OpenShift Project
++
+Begin by creating a dedicated project for your AMQ deployment. Replace `amq-broker-project` with your desired project name if preferred.
++
+[source,bash,subs="attributes+"]
+----
+oc new-project amq-broker-project
+----
++
+You should observe output similar to the following, confirming the project creation and context switch:
++
+[source,text]
+----
+Now using project "amq-broker-project" on server "https://api.your-openshift-cluster.com:6443".
+----
+
+. Install the AMQ Broker Operator
++
+The AMQ Broker Operator is responsible for automating the deployment, scaling, and management of AMQ Broker instances.
++
+[tabs]
+====
+Console::
++
+. Log in to the OpenShift Container Platform web console with appropriate credentials.
+. Navigate to the *Operators* section, then click on *OperatorHub*.
+. Use the search bar to find "AMQ Broker".
+. Select the "Red Hat Integration - AMQ Broker" Operator from the search results.
+. On the Operator details page, click the *Install* button.
+. On the "Install Operator" page:
+    *   For "Installation Mode", select "A specific namespace on the cluster" and choose `amq-broker-project` from the dropdown list.
+    *   Set the "Update Channel" to "stable" (or the latest recommended channel for your OpenShift version).
+    *   Ensure "Approval Strategy" is set to "Automatic" for hands-free updates.
+. Click *Install*.
+. Monitor the installation progress by navigating to *Operators* -> *Installed Operators*. Wait until the Operator's status changes to "Succeeded".
++
+Console output will show:
++
+[source,text]
+----
+Status: Succeeded
+----
+
+CLI::
++
+To install the Operator using the OpenShift CLI (`oc`), you typically create an `OperatorGroup` and a `Subscription`.
++
+. Create an `OperatorGroup` for the `amq-broker-project` namespace. This defines where OLM watches for custom resources.
++
+[source,bash,subs="attributes+"]
+----
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: amq-broker-operator-group
+  namespace: amq-broker-project
+spec:
+  targetNamespaces:
+  - amq-broker-project
+EOF
+----
++
+. Create a `Subscription` to subscribe the `amq-broker-project` to the AMQ Broker Operator from the `redhat-operators` catalog.
++
+[source,bash,subs="attributes+"]
+----
+oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: amq-broker-operator-subscription
+  namespace: amq-broker-project
+spec:
+  channel: stable
+  name: amq-broker-rhi-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+----
++
+. Verify the Operator installation by checking the `ClusterServiceVersion` (CSV) status:
++
+[source,bash,subs="attributes+"]
+----
+oc get csv -n amq-broker-project
+----
++
+You should see a CSV for `amq-broker-rhi-operator` with a `Succeeded` phase, indicating successful installation.
++
+[source,text]
+----
+NAME                            DISPLAY                  VERSION   REPLACES                        PHASE
+amq-broker-rhi-operator.vX.Y.Z  Red Hat Integration - AMQ Broker X.Y.Z  amq-broker-rhi-operator.vA.B.C  Succeeded
+----
+====
+
+. Deploy an AMQ Broker Instance
++
+With the Operator running, you can now create an AMQ Broker instance by defining an `ActiveMQArtemis` custom resource.
++
+[tabs]
+====
+Console::
++
+. In the OpenShift console, navigate to *Operators* -> *Installed Operators*.
+. Click on the "Red Hat Integration - AMQ Broker" Operator.
+. Select the "ActiveMQArtemis" tab.
+. Click the *Create ActiveMQArtemis* button.
+. You can choose to create from the default YAML or switch to the Form view for easier configuration.
+. Change the `metadata.name` to `my-broker` (or a name of your choice).
+. *Crucially*, locate `spec.deploymentPlan.persistenceEnabled` and set it to `true`. This enables persistent storage, which is highly recommended for any production or stateful deployment.
+. You can also adjust `spec.deploymentPlan.size` (number of broker pods) and `spec.deploymentPlan.resources` (CPU and memory limits/requests) based on your needs.
+. Ensure `spec.console.expose` is set to `true` to create a Route for the AMQ Web Console.
+. Click *Create*.
+
+CLI::
++
+Create a basic AMQ Broker instance named `my-broker` with persistence enabled and the console exposed.
++
+[source,bash,subs="attributes+"]
+----
+oc apply -f - <<EOF
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-broker
+  namespace: amq-broker-project
+spec:
+  deploymentPlan:
+    size: 1 # Number of broker pods
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.12 # Specify AMQ Broker image
+    persistenceEnabled: true # Highly recommended for production to ensure message durability
+    journalType: nio # Default journal type
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 500m
+      requests:
+        memory: 512Mi
+        cpu: 250m
+  console:
+    expose: true # Expose the AMQ Console via an OpenShift Route
+EOF
+----
++
+This YAML configuration defines:
+*   `size: 1`: Deploys a single AMQ Broker pod. For high availability, you would increase this value (e.g., to `2` or `3`).
+*   `persistenceEnabled: true`: Enables the use of Persistent Volume Claims (PVCs) for storing broker data (message journal, paging, large messages), ensuring data is not lost if the pod restarts.
+*   `image`: Specifies the Red Hat certified AMQ Broker container image.
+*   `resources`: Sets the CPU and memory `limits` and `requests` for the broker pod, which are vital for resource management and stability on OpenShift.
+*   `console.expose: true`: Instructs the Operator to create an OpenShift Route, making the AMQ Web Console accessible from outside the cluster.
+====
+
+[[section-verification]]
+== Verification of Successful Deployment
+
+After deploying the AMQ Broker instance, it's crucial to verify its status and ensure all components are running and accessible.
+
+=== Hands-on Activity: Verifying the AMQ Broker Deployment
+
+. Check the `ActiveMQArtemis` Custom Resource Status
++
+Query the status of your `ActiveMQArtemis` custom resource.
++
+[source,bash,subs="attributes+"]
+----
+oc get activemqartemis my-broker -n amq-broker-project -o yaml
+----
++
+Examine the `status` section of the output. Look for `DeploymentStatus: Running` and `AMQConsoleStatus: Running`, indicating that both the broker and its console are active.
++
+[source,yaml]
+----
+status:
+  amqConsoleStatus: Running
+  brokerStatus: Running
+  conditions:
+  - lastTransitionTime: "2023-10-27T10:00:00Z"
+    message: Brokers deployed and running
+    reason: BrokerDeploymentRunning
+    status: "True"
+    type: BrokerDeployment
+  deploymentStatus: Running
+  size: 1
+----
+
+. Verify Pods, Services, and Routes
++
+Confirm that the underlying OpenShift resources are correctly deployed and in a healthy state.
++
+[source,bash,subs="attributes+"]
+----
+oc get pods -n amq-broker-project
+oc get svc -n amq-broker-project
+oc get route -n amq-broker-project
+----
++
+You should observe:
+*   A pod named `my-broker-ss-0` (or similar for stateful sets) in a `Running` state, with `1/1` containers ready.
+*   Multiple Kubernetes `Services` exposing various AMQ protocols (e.g., `my-broker-amqp` for AMQP, `my-broker-mqtt` for MQTT, `my-broker-stomp` for STOMP, and `my-broker-console` for the web console).
+*   A `Route` named `my-broker-console`, which provides an external URL for accessing the AMQ Web Console.
++
+[source,text]
+----
+NAME              READY   STATUS    RESTARTS   AGE
+my-broker-ss-0    1/1     Running   0          5m
+
+NAME                        TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                                                      AGE
+my-broker-amqp              ClusterIP   172.30.XXX.YYY   <none>        5672/TCP                                                     5m
+my-broker-mqtt              ClusterIP   172.30.XXX.ZZZ   <none>        1883/TCP,8883/TCP                                            5m
+my-broker-stomp             ClusterIP   172.30.AAA.BBB   <none>        61613/TCP,61614/TCP                                          5m
+my-broker-console           ClusterIP   172.30.CCC.DDD   <none>        8161/TCP                                                     5m
+
+NAME                        HOST/PORT                                                            PATH   SERVICES                  PORT   TERMINATION   WILDCARD
+my-broker-console           my-broker-console-amq-broker-project.apps.your-cluster.com                  my-broker-console         8161   none          None
+----
+
+. Access the AMQ Console
++
+Retrieve the full URL for the AMQ Console Route:
++
+[source,bash,subs="attributes+"]
+----
+oc get route my-broker-console -n amq-broker-project -o jsonpath='{"https://"}{.spec.host}{"\n"}'
+----
++
+Copy the outputted HTTPS URL and paste it into your web browser. You should be presented with the AMQ Broker login page. The default credentials are `admin` for the username and `admin` for the password.
+
+[[section-configuring-amq]]
+== Configuring AMQ on OpenShift
+
+After successfully deploying the AMQ Broker, the next crucial step is to configure it according to your specific application requirements. This involves adjusting various broker settings, defining messaging entities like queues and topics, managing user access, and securing communication traffic.
+
+The primary method for configuring an AMQ Broker deployed by the Operator is by modifying its `ActiveMQArtemis` custom resource (CR). The Operator continuously monitors this CR and reconciles any changes to the running broker instance.
+
+=== Hands-on Activity: Basic Broker Configuration
+
+Let's perform a basic configuration change by modifying the `my-broker` instance to adjust resource limits and introduce a dead-letter address setting.
+
+. Edit the `ActiveMQArtemis` Custom Resource
++
+Open the `ActiveMQArtemis` custom resource for editing using the `oc edit` command:
++
+[source,bash,subs="attributes+"]
+----
+oc edit activemqartemis my-broker -n amq-broker-project
+----
++
+This command will open the YAML definition of your `my-broker` instance in your default text editor (e.g., `vi`, `nano`).
+
+. Adjust Broker Settings
++
+Within the YAML file, you can modify existing settings or add new ones. For example, you can fine-tune the `spec.deploymentPlan.resources` to match the actual workload.
++
+To introduce advanced broker-level settings, you can use the `brokerProperties` field within `spec`. Let's configure a default dead-letter address (DLQ) and maximum delivery attempts for messages that cannot be successfully processed. Add the `brokerProperties` block under `spec` (ensure correct YAML indentation):
++
+[source,yaml]
+----
+# ... (existing ActiveMQArtemis CR content) ...
+spec:
+  # ... (other deploymentPlan settings like size, image, persistenceEnabled) ...
+  brokerProperties:
+    - "addressSettings.#.deadLetterAddress=DLQ"
+    - "addressSettings.#.maxDeliveryAttempts=5"
+  # ... (console and other settings) ...
+----
++
+This configuration uses wildcards (`#`) to apply these settings to all addresses unless specifically overridden:
+*   `addressSettings.#.deadLetterAddress=DLQ`: Specifies that any message that fails to be delivered successfully after multiple retries will be moved to a default queue named `DLQ` (Dead Letter Queue).
+*   `addressSettings.#.maxDeliveryAttempts=5`: Sets the maximum number of delivery attempts for a message to 5. After the 5th failed attempt, the message will be moved to the `deadLetterAddress`.
+
+. Save and Exit
++
+Save the changes to the YAML file and exit your editor. The AMQ Broker Operator will automatically detect these modifications and initiate a reconciliation process. This typically involves restarting the broker pod(s) to apply the new configuration.
+
+. Verify the Configuration (Optional)
++
+After the broker pod restarts and returns to a `Running` state, you can verify that the new settings have been applied by inspecting the broker's logs or by checking the AMQ Console.
++
+[source,bash,subs="attributes+"]
+----
+oc logs my-broker-ss-0 -n amq-broker-project | grep "deadLetterAddress"
+----
++
+You should find log entries indicating that the broker has initialized with the specified `deadLetterAddress` configuration.
+
+=== Setting Up Queues and Exchanges (Addresses)
+
+In the context of ActiveMQ Artemis, "addresses" act as routing destinations to which messages are sent, while "queues" are consumer endpoints attached to these addresses. Messages are routed from an address to one or more queues based on the address's routing type (e.g., `ANYCAST` for traditional queues, `MULTICAST` for publish-subscribe topics).
+
+While clients can dynamically create addresses and queues upon their first use, it's often beneficial to pre-configure them for specific application needs.
+
+=== Hands-on Activity: Creating Queues via the AMQ Console
+
+Let's use the AMQ Web Console to create a new address and an associated queue.
+
+. Access the AMQ Console
++
+Navigate to the AMQ Console using the URL you retrieved earlier (`oc get route my-broker-console ...`). Log in with the default `admin`/`admin` credentials.
+
+. Navigate to the `Addresses` Tab
++
+In the left-hand navigation pane of the console, click on `Addresses`. This section displays all configured addresses and their associated queues.
+
+. Create a New Address and Queue
++
+. Click the `Create` button (typically represented by a green plus sign or similar icon).
+. In the "Create Address" dialog:
+    *   For `Name`, enter `my.first.queue.address`. This will be the logical destination for messages.
+    *   For `Routing Type`, select `ANYCAST`. This is the routing type used for point-to-point messaging with queues.
+. Click `Next`.
+. On the `Queues` step, click the `Create` button to define a new queue for this address.
+. For the new queue:
+    *   For `Name`, enter `my.first.queue`. By default, this queue will be durably attached to `my.first.queue.address` with `ANYCAST` routing.
+    *   You can leave other settings (e.g., `Durable`, `Max Consumers`, `Exclusive`) at their default values for this exercise.
+. Click `Create` to finalize the queue definition.
+. Click `Finish` on the address creation dialog.
+
+. Verify the Queue
++
+You should now see `my.first.queue.address` listed in the `Addresses` tab, with `my.first.queue` visible as one of its associated queues. You can click on the address or queue name to view more detailed configuration and runtime statistics.
+
+=== Managing AMQ User Access
+
+Security is a critical aspect of any messaging system. You must manage who can connect to the broker and what operations they are authorized to perform. AMQ Broker employs a robust security model that leverages users, roles, and authorization settings.
+
+By default, the AMQ Broker Operator configures an `admin` user. For production environments and granular access control, you will need to define additional users and assign them specific roles with tailored permissions.
+
+=== Hands-on Activity: Creating a New User for AMQ Broker
+
+This activity demonstrates how to create a new user for the AMQ Broker by modifying the `ActiveMQArtemis` custom resource.
+
+. Edit the `ActiveMQArtemis` Custom Resource
++
+Open the `ActiveMQArtemis` custom resource for editing:
++
+[source,bash,subs="attributes+"]
+----
+oc edit activemqartemis my-broker -n amq-broker-project
+----
+
+. Add a New User
++
+Under the `spec` section of the YAML, add a `users` block to define your new user. Let's create a user named `devuser` with a strong password and specific roles.
++
+[source,yaml]
+----
+# ... (existing ActiveMQArtemis CR content) ...
+spec:
+  # ... (other deploymentPlan settings, brokerProperties, console) ...
+  users:
+    - username: devuser
+      password: MySecurePassword1! # *IMPORTANT*: Use a strong, unique password in production!
+      roles:
+        - "amq"      # Standard role allowing client connections
+        - "viewer"   # Allows access to the AMQ Console (read-only)
+        - "producer" # Custom role indicating permission to produce messages
+        - "consumer" # Custom role indicating permission to consume messages
+  # ... (other settings) ...
+----
++
+*Note*: The `roles` array specifies what permissions the user possesses. Common roles include `amq` (for basic client connectivity), `viewer` (for console access), `producer`, and `consumer`. More granular permissions for these custom roles (e.g., which addresses `producer` can send to) are typically defined in the broker's authorization settings (e.g., `broker.xml` within the broker pod, or via `brokerProperties` in the CR for simpler cases).
+
+. Save and Exit
++
+Save the changes and exit your editor. The Operator will detect the update to the `ActiveMQArtemis` CR and reconcile the broker instance, adding the new `devuser` with the specified password and roles.
++
+You can then attempt to log into the AMQ Console using `devuser` and `MySecurePassword1!`.
+
+[[section-securing-traffic]]
+=== Encrypting Traffic with TLS
+
+Encrypting data in transit between clients and the AMQ Broker, as well as internally between broker nodes in a cluster, is a fundamental security requirement. This encryption is achieved using Transport Layer Security (TLS).
+
+When deploying AMQ Broker on OpenShift using the Operator, TLS configuration is streamlined through integration with OpenShift's Secret management.
+
+.High-Level Steps to Enable TLS:
+.   *Certificate Generation*: You will need a set of TLS certificates and their corresponding private keys. This typically includes a Certificate Authority (CA) certificate, a server certificate (for the broker) signed by that CA, and the server's private key. These can be generated using tools like OpenSSL or obtained from an enterprise CA.
+.   *Store Certificates in OpenShift Secrets*: The generated TLS certificates and keys must be stored securely within OpenShift `Secret` resources in your project. Each secret will typically contain the private key, public certificate, and optionally the CA certificate chain.
+.   *Configure `ActiveMQArtemis` CR*: Modify the `ActiveMQArtemis` custom resource to enable TLS and reference the Secrets containing your certificates and keys. This involves setting `spec.sslEnabled` to `true` and specifying the `keyStoreSecret` and `trustStoreSecret` names. You may also need to configure `spec.sslHost` if the broker's hostname needs to be explicitly matched to the certificate.
+.   *Client Configuration*: Any external client applications connecting to the AMQ Broker will need to trust the CA certificate that signed your broker's server certificate. This usually involves importing the CA certificate into the client's trust store.
+
+Due to the complexities involved in certificate generation, key management, and environment-specific considerations, detailed hands-on steps for TLS configuration are typically covered in dedicated security modules or through comprehensive official documentation.
+
+[[section-external-idp]]
+=== Securing AMQ with External Identity Providers
+
+For large-scale enterprise deployments, integrating the AMQ Broker with external Identity Providers (IdPs) is essential for centralized user management, single sign-on (SSO), and adherence to corporate security policies. Common IdPs include Red Hat SSO (Keycloak), LDAP directories (e.g., Microsoft Active Directory), or other SAML/OAuth-compatible systems.
+
+The AMQ Broker supports various security mechanisms, including JAAS (Java Authentication and Authorization Service), which can be configured to delegate authentication and authorization requests to external systems.
+
+.High-Level Integration Steps:
+.   *Configure JAAS Login Modules*: The broker's JAAS configuration (often managed via `broker.xml` which can be injected by the Operator using `brokerProperties` or a ConfigMap) needs to be updated to use an appropriate login module (e.g., `LDAPLoginModule`, `KeycloakLoginModule`).
+.   *Provide IdP Connection Details*: Supply the necessary connection parameters for your chosen IdP, such as the LDAP server URL, bind Distinguished Name (DN), search bases, or Keycloak realm, client ID, and secret.
+.   *Map Roles*: Establish mappings between user groups or roles defined in the IdP and the internal roles used by AMQ for authorization purposes (e.g., mapping an LDAP group `amq-producers` to the AMQ role `producer`).
+.   *Update `ActiveMQArtemis` CR*: Reference any custom configuration files (e.g., `login.config`) or secrets containing IdP credentials within the `ActiveMQArtemis` CR, allowing the Operator to inject them into the broker pod.
+
+Integrating with external IdPs is an advanced configuration task that requires a deep understanding of both AMQ security mechanisms and the specific Identity Provider being used. This topic is generally covered in specialized security training or comprehensive deployment guides.

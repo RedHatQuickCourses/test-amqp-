@@ -42,4 +42,193 @@ Follow these steps to set up an OpenShift cluster:
 
 3. **Access the OpenShift Web Console**
 
-   - Once the installation is complete, access the OpenShift web console using the master node's IP address and the default route (e.g., `https://<master_node_ip>:8443
+   - Once the installation is complete, access the OpenShift web console using the master node's IP address and the default route (e.g., `https://<master_node_ip>:8443#  Setting up an OpenShift cluster
+
+= Setting up an OpenShift Cluster
+:page-aliases: training:amq-on-openshift/lab-setup-openshift.adoc
+
+== Introduction: The Foundation for Red Hat AMQ on OpenShift
+
+This section details how to establish an OpenShift cluster, the foundational platform upon which we will deploy Red Hat AMQ. OpenShift provides a robust, enterprise-grade Kubernetes distribution that streamlines the deployment, scaling, and management of containerized applications like AMQ. By running AMQ on OpenShift, we leverage OpenShift's powerful orchestration capabilities, built-in developer tools, and operational efficiencies, ensuring a highly available and scalable messaging infrastructure.
+
+For the purpose of this hands-on lab, we will focus on setting up a local development OpenShift environment using *CodeReady Containers (CRC)*. CRC provides a minimal OpenShift 4 cluster on your local machine, perfect for learning and development without the need for extensive cloud resources. This allows you to experiment with OpenShift and AMQ without incurring cloud costs or requiring complex infrastructure setup.
+
+[[prerequisites]]
+== Prerequisites
+
+Before you begin the deployment process, ensure your system meets the following requirements. These specifications are crucial for CRC to run smoothly.
+
+*   **Operating System**: Linux, macOS, or Windows 10/11 (Pro or Enterprise editions for Hyper-V support on Windows).
+*   **Virtualization**:
+    *   *Linux*: KVM/libvirt (recommended for optimal performance).
+    *   *macOS*: HyperKit (default, often included with Docker Desktop if installed).
+    *   *Windows*: Hyper-V (recommended for Windows Pro/Enterprise). VirtualBox can be used as an alternative, but Hyper-V generally offers better integration.
+*   **System Resources**:
+    *   Minimum 4 virtual CPUs (vCPUs)
+    *   Minimum 8 GB RAM (12 GB recommended for smoother operation, especially when running multiple services)
+    *   Minimum 35 GB disk space (SSD recommended for performance)
+*   **Network**: A stable internet connection is required for downloading CRC and related OpenShift components during initial setup.
+
+[[hands-on-setup-crc]]
+== Hands-on Activity: Deploying a Local OpenShift Cluster with CodeReady Containers (CRC)
+
+This hands-on lab guides you through the process of downloading, installing, configuring, and starting a local OpenShift cluster using CodeReady Containers (CRC). Follow these steps carefully to ensure a successful setup.
+
+=== Step 1: Download CodeReady Containers (CRC) and Your Pull Secret
+
+1.  Open your web browser and navigate to the official Red Hat CodeReady Containers product page: link:https://developers.redhat.com/products/codeready-containers/overview[Red Hat CodeReady Containers].
+2.  You will need to log in with your Red Hat account. If you do not have one, you can register for free.
+3.  Once logged in, download the appropriate CRC bundle for your operating system (e.g., `.tar.xz` for Linux/macOS, `.zip` for Windows). The bundle includes the `crc` executable and the OpenShift virtual machine image.
+4.  Crucially, you must also download your *pull secret*. This is a JSON file that contains your authentication credentials, enabling CRC to pull necessary OpenShift container images from Red Hat registries. Keep this file secure; you will need its contents in a later step.
+
+NOTE: The CRC bundle itself is typically a few gigabytes. Ensure you have sufficient disk space and a stable internet connection for the download.
+
+=== Step 2: Install the `crc` Executable
+
+After downloading, you need to extract the CRC bundle and make the `crc` executable accessible.
+
+1.  **Extract the archive**:
+    *   *Linux/macOS*: Open a terminal and navigate to your download directory. Then, extract the archive using `tar`. Replace `crc-*-amd64.tar.xz` with your downloaded file name.
+        [source,bash]
+        ----
+        tar xvf crc-*-amd64.tar.xz
+        ----
+    *   *Windows*: Locate the downloaded `.zip` file in File Explorer. Right-click on it and choose "Extract All..." to extract its contents to a directory of your choice.
+2.  **Move `crc` to your system's PATH**:
+    *   *Linux/macOS*: For convenience, move the `crc` executable into a directory that is part of your system's `PATH` (e.g., `/usr/local/bin` or `~/bin`). This allows you to run `crc` commands from any directory.
+        [source,bash]
+        ----
+        sudo mv crc-*-amd64/crc /usr/local/bin
+        ----
+        After moving, verify the installation by checking the version:
+        [source,bash]
+        ----
+        crc version
+        ----
+    *   *Windows*: Move the extracted `crc.exe` to a permanent location (e.g., `C:\Program Files\CodeReadyContainers`). Then, add this directory to your system's `PATH` environment variable. Alternatively, you can run `crc` commands directly from the directory where `crc.exe` resides.
+
+=== Step 3: Configure CodeReady Containers
+
+Before starting your cluster, it's highly recommended to configure CRC with appropriate resource allocations and provide your pull secret.
+
+1.  **Set CPU and Memory**: Adjust these values based on the prerequisites and your system's capabilities. While 4 vCPUs and 8 GB RAM are minimum, 12 GB RAM is recommended for better performance.
+    [source,bash]
+    ----
+    crc config set cpus 4
+    crc config set memory 12288 # For 12GB RAM (1024 * 12)
+    ----
+2.  **Set Disk Size**: The default disk size is often 31GB. You might want to increase it to 40GB or more to allow for future expansion and image storage.
+    [source,bash]
+    ----
+    crc config set disk-size 40G
+    ----
+3.  **Set the Pull Secret**: Provide the *full JSON content* of your downloaded `pull-secret.txt` (or `.json`) file. Ensure you enclose the entire JSON string in single quotes.
+    [source,bash]
+    ----
+    crc config set pull-secret '<YOUR_PULL_SECRET_CONTENT_HERE>'
+    ----
+    Replace `<YOUR_PULL_SECRET_CONTENT_HERE>` with the actual JSON content from your pull secret file.
+
+TIP: You can review your current CRC configuration at any time using `crc config view`. This helps confirm your settings before starting the cluster.
+
+=== Step 4: Start the OpenShift Cluster
+
+Now that CRC is configured, you can start your local OpenShift cluster.
+
+1.  Execute the `crc start` command. This process will take some time, especially on the first run, as CRC downloads necessary OpenShift components, creates the virtual machine, and provisions the cluster.
+    [source,bash]
+    ----
+    crc start
+    ----
+    During the initial startup, CRC might prompt you to configure your host machine's virtualization environment. Follow any on-screen instructions.
+
+    *Expected Output Snippet (may vary slightly)*:
+    ....
+    INFO Checking if oc is cached
+    INFO Checking if podman is cached
+    INFO Checking if CodeReady Containers instance is running
+    INFO Starting CodeReady Containers instance
+    INFO Verifying if the cluster is ready...
+    INFO CodeReady Containers is running
+    To access the Red Hat OpenShift cluster, you need to add the 'oc' executable to your PATH.
+    This can be done by running this command:
+    . <(crc oc-env)
+    Or you can run 'crc console' to open the OpenShift Web Console.
+    ....
+
+2.  Wait for the command to complete and report that "CodeReady Containers is running."
+
+=== Step 5: Log in to the OpenShift Cluster
+
+After the cluster starts, you need to configure your environment to interact with it using the `oc` command-line interface.
+
+1.  **Set `oc` environment variables**: CRC manages its own `oc` binary and `KUBECONFIG`. To use it, you need to set the environment variables in your current terminal session.
+    [source,bash]
+    ----
+    eval $(crc oc-env)
+    ----
+    NOTE: You must run this command in *every new terminal session* where you intend to interact with your CRC OpenShift cluster using `oc`.
+2.  **Verify `oc` client access (Developer User)**:
+    By default, CRC logs you in as the `developer` user. Verify this:
+    [source,bash]
+    ----
+    oc whoami
+    ----
+    Expected output: `developer`
+3.  **Log in as `kubeadmin` (Administrator User)**:
+    For administrative tasks, you'll often need to log in as the `kubeadmin` user. CRC provides a temporary password for this user.
+    *   Retrieve the `kubeadmin` credentials:
+        [source,bash]
+        ----
+        crc console --credentials
+        ----
+        This will display the username (`kubeadmin`) and a temporary password. Copy this password.
+    *   Log in using the `kubeadmin` credentials. Replace `<KUBEADMIN_PASSWORD_FROM_ABOVE>` with the actual password you copied. The `--insecure-skip-tls-verify=true` flag is necessary because CRC uses a self-signed certificate, which is acceptable for a local development environment.
+        [source,bash]
+        ----
+        oc login -u kubeadmin -p <KUBEADMIN_PASSWORD_FROM_ABOVE> $(oc whoami --show-server) --insecure-skip-tls-verify=true
+        ----
+    *   Verify `kubeadmin` access:
+        [source,bash]
+        ----
+        oc whoami
+        ----
+        Expected output: `kubeadmin`
+4.  **Access the OpenShift Web Console**:
+    To open the OpenShift web console in your default browser, run:
+    [source,bash]
+    ----
+    crc console
+    ----
+    You can log in to the web console using either the `developer` or `kubeadmin` credentials obtained above.
+
+[[verification]]
+== Verification of Successful Deployment
+
+To confirm that your OpenShift cluster is fully operational and accessible, perform these checks:
+
+1.  **Check cluster operators status**:
+    All core OpenShift components are managed by Cluster Operators. Their status indicates the health and readiness of the cluster.
+    [source,bash]
+    ----
+    oc get co
+    ----
+    Expected output: All operators should eventually show `AVAILABLE` as `True` and `PROGRESSING` as `False`. It might take a few minutes after `crc start` for all operators to stabilize completely.
+
+2.  **Check nodes status**:
+    Verify that your CRC virtual machine node is in a `Ready` state.
+    [source,bash]
+    ----
+    oc get nodes
+    ----
+    Expected output: You should see at least one node (named similar to `crc-xxxx-xxxxx`) with `STATUS` as `Ready`.
+
+3.  **Check project list**:
+    Confirm you can list the default OpenShift projects, indicating successful API server communication.
+    [source,bash]
+    ----
+    oc get projects
+    ----
+    Expected output: A list of default OpenShift projects (e.g., `default`, `kube-public`, `kube-system`, `openshift`, etc.).
+
+Congratulations! You have successfully deployed and configured a local OpenShift cluster using CodeReady Containers. This cluster will serve as the robust environment for deploying and configuring Red Hat AMQ in the subsequent hands-on labs. You are now ready to proceed with installing and managing your messaging infrastructure.

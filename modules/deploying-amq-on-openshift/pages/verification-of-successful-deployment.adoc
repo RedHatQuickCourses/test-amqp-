@@ -50,4 +50,153 @@ Before verifying the deployment, ensure that:
 
    ```java
    ConnectionFactory factory = new ConnectionFactory("tcp://<AMQ_BROKER_ROUTE_HOSTNAME>:8880");
-   Connection connection = factory.createConnection
+   Connection connection = factory.createConnection#  Verification of successful deployment
+
+= Verification of successful deployment
+
+Verifying a successful deployment is a critical step after deploying any application, and Red Hat AMQ on OpenShift is no exception. This process ensures that all components of your AMQ broker are running correctly, are accessible, and are ready to process messages. It helps identify and troubleshoot potential issues early, preventing downstream problems in your messaging infrastructure.
+
+The verification process typically involves checking the status of OpenShift resources (pods, deployments, services, routes) and confirming that the AMQ broker itself is operational and accessible.
+
+== Why Verification is Crucial
+
+A successful deployment doesn't just mean your commands ran without errors. It means:
+
+*   **Resource Readiness:** All required OpenShift resources (pods, services, routes, persistent volumes) are created and in a healthy state.
+*   **Application Health:** The AMQ broker application within the pods has started correctly, is not encountering internal errors, and is listening on its designated ports.
+*   **Network Accessibility:** The AMQ broker's services are exposed correctly within the OpenShift cluster, and if configured, routes for external access are functional.
+*   **Operational Readiness:** The broker is ready to accept client connections and process messages, queues and topics are initialized, and any necessary configurations (like users, authentication, authorization) are applied.
+
+Failing to verify can lead to silent failures, connectivity issues for client applications, or performance degradation that only becomes apparent much later.
+
+== Hands-on Activity: Verifying AMQ Deployment
+
+This hands-on activity guides you through the essential steps to confirm the successful deployment of your Red Hat AMQ broker on OpenShift.
+
+=== Prerequisites
+
+*   An active OpenShift cluster where AMQ has been deployed (as per previous sections).
+*   `oc` command-line tool configured and logged into your OpenShift cluster.
+*   The project (namespace) where AMQ was deployed.
+
+=== Step 1: Ensure You Are in the Correct OpenShift Project
+
+First, ensure your `oc` CLI is pointed to the correct project where AMQ was deployed. Replace `<your-amq-project>` with the actual name of your OpenShift project.
+
+[source,bash]
+----
+oc project <your-amq-project>
+----
+
+This command confirms you are working within the correct namespace, preventing accidental checks on other projects.
+
+=== Step 2: Check the Status of AMQ Pods
+
+The most fundamental check is to ensure that the AMQ broker pods are running and healthy.
+
+.Execute the following command to list all pods in your project:
+[source,bash]
+----
+oc get pods
+----
+
+.Observe the output. You should see one or more pods related to your AMQ broker deployment (e.g., `amq-broker-deployer-...`, `amq-broker-ss-0`).
+[NOTE]
+The exact names might vary based on your deployment method (e.g., Operator-managed vs. template-based, StatefulSet vs. Deployment).
+
+.Key things to look for in the output:
+*   **`STATUS` column:** It should show `Running`. If you see `Pending`, `ContainerCreating`, `Error`, or `CrashLoopBackOff`, there's an issue.
+*   **`READY` column:** It should show `1/1` or `X/X` where `X` is the number of containers defined for the pod. This indicates all containers within the pod are ready.
+
+[IMPORTANT]
+If any pods are not in the `Running` and `READY` state, proceed to check the pod logs (Step 6) for more details.
+
+=== Step 3: Check the Status of AMQ Deployment/StatefulSet
+
+Verify the overall status of the deployment resource (Deployment or StatefulSet) that manages your AMQ pods.
+
+.If your AMQ broker was deployed using a Deployment (e.g., via a standard template):
+[source,bash]
+----
+oc get deployment
+----
+
+.If your AMQ broker was deployed using a StatefulSet (common for Operator-managed or clustered AMQ deployments):
+[source,bash]
+----
+oc get statefulset
+----
+
+.In the output, locate your AMQ broker deployment (e.g., `amq-broker-deployment` or `amq-broker-ss`).
+.Look for the `READY` column. It should indicate that the desired number of replicas are available and ready (e.g., `1/1` for a single broker instance).
+
+=== Step 4: Verify AMQ Services
+
+OpenShift Services are responsible for exposing your AMQ broker pods within the cluster and load-balancing connections.
+
+.List all services in your project:
+[source,bash]
+----
+oc get svc
+----
+
+.Look for services related to your AMQ broker. Common service names include:
+*   `amq-broker-amqp`: For AMQP protocol clients (port 5672).
+*   `amq-broker-stomp`: For STOMP protocol clients (port 61613).
+*   `amq-broker-mqtt`: For MQTT protocol clients (port 1883).
+*   `amq-broker-openwire`: For OpenWire protocol clients (port 61616).
+*   `amq-broker-web` or `amq-broker-console`: For the web console (port 8161).
+
+.Confirm that the `CLUSTER-IP` and `PORT(S)` columns show the expected values and that the service is not stuck in a `Pending` state.
+
+=== Step 5: Check for External Routes (if configured)
+
+If you configured external access to the AMQ broker or its web console using OpenShift Routes, verify their existence and functionality.
+
+.List all routes in your project:
+[source,bash]
+----
+oc get route
+----
+
+.Identify routes related to your AMQ broker (e.g., `amq-broker-web-console`, `amq-broker-amqp-external`).
+.Note the `HOST/PORT` for these routes. This is the external URL you would use to access the service.
+
+.Optional: Test a route (e.g., the web console) by navigating to its `HOST/PORT` in your web browser. If it loads the AMQ console login page, the route is functional.
+
+=== Step 6: Examine AMQ Pod Logs
+
+Checking the logs of the AMQ broker pods is crucial for identifying any startup errors, configuration issues, or warnings that might not be apparent from the pod status alone.
+
+.Identify the name of one of your AMQ broker pods from Step 2 (e.g., `amq-broker-ss-0`).
+.View the logs for that pod:
+[source,bash]
+----
+oc logs <amq-broker-pod-name>
+----
+
+.Look for messages indicating successful broker startup. These might include:
+*   `ActiveMQ Artemis <version> server started`
+*   `AMQBroker deployed successfully`
+*   Messages indicating successful binding to ports (e.g., `AMQP protocol handler listening on /0.0.0.0:5672`).
+*   Absence of critical errors (`ERROR`, `FATAL`) or repeated `WARN` messages that indicate a problem.
+
+[TIP]
+You can stream logs in real-time using `oc logs -f <amq-broker-pod-name>` to monitor activity as the broker starts or clients connect.
+
+=== Step 7: Access the AMQ Web Console (if deployed)
+
+If your AMQ deployment includes the web console (Hawtio Console), accessing it is an excellent way to visually confirm the broker's health and configuration.
+
+.From Step 5, get the `HOST/PORT` for the AMQ web console route (e.g., `amq-broker-web-console-amq-project.apps.cluster.example.com`).
+.Open this URL in your web browser.
+.You should be presented with the AMQ Console login page.
+.Log in using the credentials configured for your broker (e.g., `admin`/`admin` if default or specified during deployment).
+
+.Once logged in, verify the following:
+*   **Overview Page:** Check the broker's status (should be "Started").
+*   **Connections:** See if any internal connections are active.
+*   **Queues/Topics:** Confirm that any pre-configured queues or topics are present.
+*   **Runtime Metrics:** Observe basic metrics to ensure the broker is active.
+
+By successfully completing these verification steps, you can be confident that your Red Hat AMQ broker has been deployed successfully on OpenShift and is ready for use by your client applications. Any issues encountered during these steps should be investigated using the `oc describe` and `oc logs` commands for the problematic resources.

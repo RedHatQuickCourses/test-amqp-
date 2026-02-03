@@ -41,4 +41,351 @@ You can create custom roles as well, tailored to your specific use case. To crea
 
 Permissions can be specified using one or more of the following:
 
-- `create
+- `create#  Managing AMQ user access
+
+= Managing AMQ User Access
+
+Ensuring secure access to your Red Hat AMQ brokers deployed on OpenShift is paramount for maintaining data integrity, preventing unauthorized message access, and adhering to compliance requirements. This topic delves into the mechanisms for managing user authentication and authorization within AMQ on OpenShift, focusing on how to control who can connect to the broker and what operations they can perform on queues and topics.
+
+== Detailed Technical Explanation
+
+Message-oriented middleware (MOM) like Red Hat AMQ acts as a central nervous system for applications, handling critical data exchange. Without robust access control, sensitive information could be exposed, or system stability could be compromised by malicious or accidental misuse.
+
+Red Hat AMQ Broker, at its core, leverages an authentication and authorization model that can be configured to meet diverse security requirements. When deployed on OpenShift, this model integrates seamlessly with OpenShift's resource management and can be extended to leverage external identity providers.
+
+=== Core Security Concepts: Authentication and Authorization
+
+Before diving into configuration, it's essential to understand the two fundamental pillars of access control:
+
+*   **Authentication:** The process of verifying the identity of a user or system. When a client attempts to connect to an AMQ broker, the broker first authenticates the client by checking their provided credentials (e.g., username and password) against a known source.
+*   **Authorization:** The process of determining what an authenticated user or system is permitted to do. Once a client's identity is verified, the broker checks if that client (or their associated role) has the necessary permissions to perform operations like sending messages to a specific queue, consuming from a topic, or administering the broker.
+
+=== AMQ Broker's Role-Based Access Control (RBAC)
+
+Red Hat AMQ Broker primarily implements security through **Role-Based Access Control (RBAC)**. This means permissions are assigned to roles, and users are then assigned to one or more roles. This simplifies management, as you can define permissions once for a role and then apply that role to many users.
+
+The core of AMQ Broker's security configuration resides within its `broker.xml` file. When deploying AMQ on OpenShift using the AMQ Broker Operator, these configurations are typically managed through the Custom Resource (CR) definition for the `ActiveMQArtemis` instance.
+
+The key components for managing user access in `broker.xml` are:
+
+1.  **Security Domains (`<security-domains>`):**
+    *   A security domain defines how users are authenticated and mapped to roles. For internal user management, AMQ Broker uses a built-in `PropertiesLoginModule` which reads user credentials and role mappings from properties files (or, in the context of OpenShift, directly embedded within the CR).
+    *   Each user is assigned a username, password, and one or more roles.
+    *   Example:
+        ```xml
+        <security-domains>
+          <security-domain name="activemq-domain">
+            <authentication>
+              <simple>
+                <user name="admin" password="Password1!" roles="amq-admin, amq-user"/>
+                <user name="appuser" password="Password2!" roles="amq-user"/>
+              </simple>
+            </authentication>
+          </security-domain>
+        </security-domains>
+        ```
+        In this example, two users (`admin` and `appuser`) are defined, each with specific roles. The `activemq-domain` is the default security domain for AMQ Broker.
+
+2.  **Security Settings (`<security-settings>`):**
+    *   These settings define the granular permissions for specific address resources (queues and topics). You can specify who can create, delete, send to, consume from, or manage various destinations.
+    *   Security settings use a wildcard matching pattern to apply rules to addresses.
+    *   Permissions are defined for different access types:
+        *   `createNonDurableQueue`: Permission to create a non-durable queue.
+        *   `deleteNonDurableQueue`: Permission to delete a non-durable queue.
+        *   `createDurableQueue`: Permission to create a durable queue.
+        *   `deleteDurableQueue`: Permission to delete a durable queue.
+        *   `send`: Permission to send messages to an address.
+        *   `consume`: Permission to consume messages from an address.
+        *   `browse`: Permission to browse messages on an address (without consuming).
+        *   `manage`: Permission to manage an address (e.g., pause, resume, purge).
+        *   `view`: Permission to view statistics of an address.
+    *   Example:
+        ```xml
+        <security-settings>
+          <security-setting match="myQueue.#">
+            <permission type="send" roles="amq-user"/>
+            <permission type="consume" roles="amq-user"/>
+            <permission type="createNonDurableQueue" roles="amq-admin"/>
+            <permission type="createDurableQueue" roles="amq-admin"/>
+            <permission type="deleteNonDurableQueue" roles="amq-admin"/>
+            <permission type="deleteDurableQueue" roles="amq-admin"/>
+          </security-setting>
+          <security-setting match="activemq.#">
+            <permission type="createNonDurableQueue" roles="amq-admin"/>
+            <permission type="createDurableQueue" roles="amq-admin"/>
+            <permission type="deleteNonDurableQueue" roles="amq-admin"/>
+            <permission type="deleteDurableQueue" roles="amq-admin"/>
+            <permission type="send" roles="amq-admin, amq-user"/>
+            <permission type="consume" roles="amq-admin, amq-user"/>
+            <permission type="manage" roles="amq-admin"/>
+            <permission type="view" roles="amq-admin, amq-user"/>
+          </security-setting>
+        </security-settings>
+        ```
+        In this example, only users with the `amq-user` role can send and consume from queues matching `myQueue.#` (e.g., `myQueue.order`, `myQueue.payment`). Administrators (`amq-admin`) have broader permissions, including queue creation and deletion.
+
+=== Integration with OpenShift and External Identity Providers
+
+While the `broker.xml` allows for defining internal users and roles, real-world enterprise deployments often require integration with existing identity management systems. AMQ Broker supports this through JAAS (Java Authentication and Authorization Service) modules.
+
+*   **OpenShift Service Accounts:** Applications deployed within OpenShift can connect to AMQ Broker using OpenShift Service Accounts. While this provides authentication for the application itself, it typically doesn't map directly to fine-grained message access control within AMQ Broker without further JAAS configuration or custom plugins.
+*   **External Identity Providers (e.g., Keycloak, LDAP):** For managing human users or centralizing identity, AMQ Broker can be configured to authenticate against external systems like Red Hat Keycloak (an OpenID Connect provider) or LDAP/Active Directory. This is achieved by configuring custom JAAS login modules in the `broker.xml` to delegate authentication to these external services. Authorization logic can then be implemented either by mapping external roles to AMQ internal roles or by querying the external system for user group memberships.
+    *   **Red Hat AMQ 7.x and Keycloak:** Red Hat strongly recommends using Keycloak for external identity management with AMQ 7.x. The AMQ Broker Operator can simplify the integration by providing parameters to connect to a Keycloak instance.
+
+For this lab, we will focus on configuring internal users and roles directly within the `ActiveMQArtemis` custom resource, as it demonstrates the core RBAC functionality of the broker in a straightforward manner.
+
+== Hands-on Activity: Managing AMQ User Access
+
+In this lab, you will configure your AMQ Broker instance on OpenShift to restrict access to a specific queue. You will define a new user and a role, and then set permissions so that only this user (via their role) can send and consume messages from a designated queue.
+
+=== Prerequisites
+
+*   An OpenShift cluster with `oc` CLI configured.
+*   The Red Hat AMQ Broker Operator installed on the cluster.
+*   An `ActiveMQArtemis` broker instance already deployed and running in a project (e.g., named `amq-broker-project`).
+    *   If you haven't deployed one, you can use the instructions from the "Deploying AMQ on OpenShift" objective. For this lab, a basic deployment without specific security settings is sufficient initially.
+
+=== Lab Steps
+
+==== 1. Inspect the Existing Broker Configuration
+
+First, let's look at the Custom Resource (CR) for your AMQ Broker instance.
+
+.1. Log in to your OpenShift cluster:
++
+```bash
+oc login -u developer -p developer
+```
++
+(Replace `developer` with your actual username and password if different.)
+
+.2. Switch to your AMQ Broker project:
++
+```bash
+oc project amq-broker-project
+```
++
+(Replace `amq-broker-project` with the actual name of your project.)
+
+.3. Get the name of your AMQ Broker instance:
++
+```bash
+oc get activemqartemis
+```
++
+You should see output similar to:
++
+```
+NAME          AGE
+amq-broker    2d19h
+```
++
+In this example, the instance name is `amq-broker`.
+
+.4. Export the current CR definition to a YAML file:
++
+```bash
+oc get activemqartemis amq-broker -o yaml > amq-broker-cr.yaml
+```
++
+(Replace `amq-broker` with your instance name.)
+
+.5. Open `amq-broker-cr.yaml` in your preferred text editor. Notice the structure, especially the `spec` section where broker configuration is defined. You'll likely see a basic `brokerProperties` or `broker.xml` section, but no explicit security settings yet.
+
+==== 2. Define a Security Domain with a New User and Role
+
+Now, you will add a `security-domains` block to your `broker.xml` configuration within the CR. This will define a new user, `secureuser`, with the role `secure-role`.
+
+.1. Edit the `amq-broker-cr.yaml` file you just exported.
+.2. Locate the `spec.brokerProperties` section or the `spec.brokerXml` section. If you're using `spec.brokerProperties`, you'll need to encode the XML as a string. If using `spec.brokerXml`, you can directly embed the XML. We'll assume `spec.brokerXml` for clarity here.
+.3. Add the following XML snippet under `spec.brokerXml` to define your security domain and users. If `security-domains` already exists, merge these definitions.
+
++
+[source,xml]
+----
+<configuration>
+  <!-- ... existing broker.xml content ... -->
+
+  <security-domains>
+    <security-domain name="activemq-domain">
+      <authentication>
+        <simple>
+          <!-- Existing users might be here, add new ones -->
+          <user name="secureuser" password="SecurePassword123!" roles="secure-role"/>
+        </simple>
+      </authentication>
+    </security-domain>
+  </security-domains>
+
+  <!-- ... rest of broker.xml content ... -->
+</configuration>
+----
++
+*   `<1>`: Replace `SecurePassword123!` with a strong password. This user will have the role `secure-role`.
+
+==== 3. Define Security Settings for a Specific Queue
+
+Next, you will define a `security-setting` that restricts access to a new queue named `secure.queue`. Only users with the `secure-role` will be able to send messages to and consume messages from this queue.
+
+.1. In the same `amq-broker-cr.yaml`, add the following `security-settings` block. If `security-settings` already exists, merge this with existing definitions. Ensure it's placed within the main `<configuration>` tags.
+
++
+[source,xml]
+----
+<configuration>
+  <!-- ... existing broker.xml content including security-domains ... -->
+
+  <security-settings>
+    <security-setting match="secure.queue">
+      <permission type="send" roles="secure-role"/>
+      <permission type="consume" roles="secure-role"/>
+      <permission type="createNonDurableQueue" roles="amq-admin"/> <1>
+      <permission type="createDurableQueue" roles="amq-admin"/>   <1>
+      <permission type="deleteNonDurableQueue" roles="amq-admin"/> <1>
+      <permission type="deleteDurableQueue" roles="amq-admin"/>   <1>
+    </security-setting>
+    <!-- Wildcard settings for general broker access if not already present -->
+    <security-setting match="#">
+      <permission type="createNonDurableQueue" roles="amq-admin"/>
+      <permission type="deleteNonDurableQueue" roles="amq-admin"/>
+      <permission type="createDurableQueue" roles="amq-admin"/>
+      <permission type="deleteDurableQueue" roles="amq-admin"/>
+      <permission type="send" roles="amq-admin, secure-role"/> <2>
+      <permission type="consume" roles="amq-admin, secure-role"/> <2>
+      <permission type="manage" roles="amq-admin"/>
+      <permission type="view" roles="amq-admin, secure-role"/>
+    </security-setting>
+  </security-settings>
+
+  <!-- ... rest of broker.xml content ... -->
+</configuration>
+----
+<1> This allows an `amq-admin` (a role typically pre-defined or configurable via the broker operator) to create and delete the queue. Without this, only the `secure-role` would be allowed to create/delete, which might not be desirable for general administration.
+<2> This wildcard setting ensures that the `secure-role` can also send/consume from other queues if not explicitly restricted, and that an `amq-admin` can also send/consume from any queue. Adjust this default as per your requirements.
+
+==== 4. Apply the Changes to the AMQ Broker Instance
+
+Save your `amq-broker-cr.yaml` file. Now, apply these changes to your running AMQ Broker instance on OpenShift. The AMQ Broker Operator will detect the changes and restart the broker pods if necessary to apply the new configuration.
+
+.1. Apply the updated CR:
++
+```bash
+oc apply -f amq-broker-cr.yaml
+```
++
+You should see output like: `activemqartemis.broker.amq.io/amq-broker configured`.
+
+.2. Monitor the broker pods until they are `Running` again:
++
+```bash
+oc get pods -w
+```
++
+Wait until the pods for your AMQ Broker (`amq-broker-ss-0`, etc.) are in the `Running` state and ready.
+
+==== 5. Test Access - Unauthorized Client
+
+Now, let's try to connect to the broker and interact with `secure.queue` without providing credentials or with incorrect credentials. This will demonstrate the authorization in action.
+
+.1. **Expose a Route to the AMQ Broker (if not already done):**
+    You'll need a way for external clients (like our test client) to connect. If you followed previous labs, a route to the OpenWire or AMQP endpoint might already exist. If not, create one.
+
+    To get the service name:
+    ```bash
+    oc get svc
+    # Look for a service named like amq-broker-hdls-svc or amq-broker-amqp-svc
+    ```
+
+    Example for creating an OpenWire route (if needed, replace `amq-broker-hdls-svc`):
+    ```bash
+    oc create route passthrough amq-broker-openwire --service=amq-broker-hdls-svc --port=openwire
+    oc get route amq-broker-openwire -o jsonpath='{.spec.host}{"\n"}'
+    # Copy the hostname for later use. Let's call it $BROKER_HOST.
+    # Note: For passthrough, you'll need the port too, often 61617.
+    ```
+    Alternatively, for a standard route to the AMQP service:
+    ```bash
+    oc create route edge amq-broker-amqp --service=amq-broker-amqp-svc --port=amqp
+    oc get route amq-broker-amqp -o jsonpath='{.spec.host}{"\n"}'
+    # Copy the hostname for later use. Let's call it $BROKER_HOST.
+    # The port will be 443 (default HTTPS for edge routes).
+    ```
+    For the purposes of this lab, connecting from within the cluster for testing might be simpler and avoid TLS complexities for now. We will use `oc run` to deploy a temporary client pod.
+
+.2. **Deploy a temporary client pod to test (unauthorized):**
+    We'll use a simple ActiveMQ client to send a message without providing credentials.
+
+    ```bash
+    oc run unauthorized-sender --image=registry.access.redhat.com/amq7/amq-broker-client-java:7.9 --restart=Never --command -- sh -c "java -jar /opt/amq-broker-client-java/lib/artemis-jms-client.jar --url tcp://amq-broker-hdls-svc:61616 --destination queue://secure.queue --mode producer --message 'Unauthorized test message'"
+    ```
+    *   `amq-broker-hdls-svc:61616`: This is the internal service name and port for the broker's core protocol. If your broker uses a different service name or port, adjust it.
+    *   `queue://secure.queue`: The queue we are trying to send to.
+
+.3. **Check the pod logs for the error:**
+    ```bash
+    oc logs unauthorized-sender
+    ```
+    You should see an error message indicating authentication or authorization failure, similar to:
+    ```
+    javax.jms.JMSSecurityException: AMQ229033: Cannot create session, unauthenticated
+    ```
+    Or:
+    ```
+    javax.jms.JMSSecurityException: AMQ229031: Cannot connect to broker. ClientID not found.
+    ```
+    This confirms that the broker is now enforcing authentication.
+
+==== 6. Test Access - Authorized Client
+
+Now, let's use the `secureuser` credentials to send a message successfully.
+
+.1. **Deploy a temporary client pod to test (authorized):**
+
+    ```bash
+    oc run authorized-sender --image=registry.access.redhat.com/amq7/amq-broker-client-java:7.9 --restart=Never --command -- sh -c "java -jar /opt/amq-broker-client-java/lib/artemis-jms-client.jar --url tcp://amq-broker-hdls-svc:61616 --user secureuser --password 'SecurePassword123!' --destination queue://secure.queue --mode producer --message 'Authorized test message'"
+    ```
+    *   Replace `SecurePassword123!` with the password you set for `secureuser`.
+
+.2. **Check the pod logs for success:**
+    ```bash
+    oc logs authorized-sender
+    ```
+    You should see output indicating the message was sent successfully:
+    ```
+    Sent message 1 of 1 to queue://secure.queue
+    ```
+
+.3. **Verify message consumption (authorized):**
+    Let's also confirm consumption works for the authorized user.
+
+    ```bash
+    oc run authorized-consumer --image=registry.access.redhat.com/amq7/amq-broker-client-java:7.9 --restart=Never --command -- sh -c "java -jar /opt/amq-broker-client-java/lib/artemis-jms-client.jar --url tcp://amq-broker-hdls-svc:61616 --user secureuser --password 'SecurePassword123!' --destination queue://secure.queue --mode consumer --count 1"
+    ```
+
+.4. **Check the consumer pod logs:**
+    ```bash
+    oc logs authorized-consumer
+    ```
+    You should see output similar to:
+    ```
+    Received message: 'Authorized test message'
+    ```
+    This confirms that `secureuser` with `secure-role` has the correct authorization to send and consume messages from `secure.queue`.
+
+==== 7. Clean Up (Optional)
+
+.1. Delete the temporary client pods:
++
+```bash
+oc delete pod unauthorized-sender authorized-consumer
+```
+
+.2. If you want to revert the security settings, edit `amq-broker-cr.yaml` again, remove the `security-domains` and `security-settings` blocks you added, save the file, and then apply it:
++
+```bash
+oc apply -f amq-broker-cr.yaml
+```
++
+The broker will reconfigure, and access restrictions will be lifted or reverted to previous settings.
+
+This concludes the hands-on activity, demonstrating how to define users, roles, and fine-grained permissions for your Red Hat AMQ Broker on OpenShift. By leveraging the `ActiveMQArtemis` Custom Resource, you can manage the broker's security posture declaratively.

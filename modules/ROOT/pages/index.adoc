@@ -25,6 +25,36 @@ Duration: FIXME hours
 
 *  Hands-on Lab
 
+*  Understanding the need for message oriented middleware
+
+*  Understanding the need for message oriented middleware
+
+*  Understanding the need for message oriented middleware
+
+*  Understanding the need for message oriented middleware
+
+*  Understanding the need for message oriented middleware
+
+*  Understanding the need for message oriented middleware
+
+*  Understanding the need for message oriented middleware
+
+*  What is Red Hat AMQ
+
+*  Understanding the need for message oriented middleware
+
+*  Understanding the need for message oriented middleware
+
+*  What is Red Hat AMQ
+
+*  Deploying AMQ on OpenShift
+
+*  Configuring AMQ on OpenShift
+
+*  Accessing AMQ deployed on OpenShift through external clients
+
+*  Hands-on Lab
+
 
 
 == Prerequisites

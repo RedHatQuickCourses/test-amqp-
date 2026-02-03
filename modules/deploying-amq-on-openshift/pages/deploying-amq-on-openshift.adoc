@@ -13,4 +13,55 @@
 - **Verification of Successful Deployment**:
   - Check the status of the DeploymentConfig or Operator to ensure that the AMQ brokers are running.
   - Verify that the AMQ service is accessible via the exposed Route or LoadBalancer.
-  - Test the connection to the AMQ brokers using the AMQ client or a command-line tool like 'amqp-connection'.
+  - Test the connection to the AMQ brokers using the AMQ client or a command-line tool like 'amqp-connection'.#  Deploying AMQ on OpenShift
+
+=== Deploying AMQ on OpenShift
+
+Deploying Red Hat AMQ on OpenShift involves provisioning the necessary resources and configuring the AMQ broker instances within an OpenShift cluster. This process leverages OpenShift's orchestration capabilities to manage and scale AMQ deployments efficiently.
+
+Key aspects of deploying AMQ on OpenShift include:
+
+*   *Prerequisites for Deployment*:
+    ** An operational OpenShift cluster (version 4.x recommended).
+    ** `oc` command-line tool configured with access to the cluster.
+    ** OpenShift project (namespace) dedicated for AMQ.
+    ** Appropriate ClusterServiceVersions (CSVs) for AMQ Operators (e.g., AMQ Broker Operator, AMQ Streams Operator) installed in the cluster.
+
+*   *Steps to Deploy AMQ on OpenShift*:
+    ** Install the relevant AMQ Operator from the OpenShift OperatorHub (e.g., Red Hat Integration - AMQ Broker for AMQ Broker).
+    ** Create a custom resource (CR) instance for the AMQ broker. This typically involves defining a `ActiveMQArtemis` custom resource manifest.
+
+    [source,yaml]
+    ----
+    apiVersion: broker.amq.io/v1beta1
+    kind: ActiveMQArtemis
+    metadata:
+      name: my-amq-broker
+      namespace: my-amq-project
+    spec:
+      deploymentPlan:
+        size: 1
+        image: registry.redhat.io/amq7/amq-broker-rhel8:7.12
+    ----
+
+    ** Apply the CR to the OpenShift cluster using `oc apply`.
+
+    [source,bash]
+    ----
+    oc apply -f amq-broker-cr.yaml -n my-amq-project
+    ----
+
+    ** The Operator then provisions the necessary resources (Deployment, StatefulSet, Services, Routes, PersistentVolumeClaims, etc.) based on the CR definition.
+
+*   *Verification of Successful Deployment*:
+    ** Check the status of the AMQ broker instance.
+
+    [source,bash]
+    ----
+    oc get activemqartemis -n my-amq-project
+    oc get pods -l app=my-amq-broker -n my-amq-project
+    ----
+
+    ** Confirm that all associated pods are running and healthy.
+    ** Access the AMQ Console via the generated OpenShift Route to ensure the broker is responsive.
+    ** Review OpenShift events and pod logs for any errors or warnings.

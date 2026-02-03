@@ -47,4 +47,310 @@ Before configuring TLS for AMQ on OpenShift, ensure the following:
 
 2. **Create a Secret**: Create a Kubernetes Secret using the keystore and truststore files.
 
-3. **Update AMQ Broker Configuration**:
+3. **Update AMQ Broker Configuration**:#  Encrypting traffic with TLS
+
+= Encrypting traffic with TLS
+
+:navtitle: Encrypting Traffic with TLS
+
+Protecting data in transit is paramount for any enterprise application, especially when dealing with sensitive information exchanged through messaging systems. Transport Layer Security (TLS) provides robust encryption and authentication mechanisms to secure network communications. In this section, we will delve into the technical aspects of encrypting Red Hat AMQ on OpenShift traffic using TLS, followed by a hands-on lab to implement and verify this crucial security measure.
+
+== Understanding TLS for Red Hat AMQ on OpenShift
+
+TLS, the successor to SSL, establishes an encrypted channel between two communication endpoints, ensuring confidentiality, integrity, and authenticity of data. When applied to Red Hat AMQ on OpenShift, TLS secures the communication paths for:
+
+*   **External clients to AMQ brokers:** Securing messages sent and received by applications connecting to the AMQ broker.
+*   **Inter-broker communication:** Ensuring secure message routing and replication within a clustered AMQ environment.
+*   **AMQ Management Console:** Protecting access to the administrative UI if configured for TLS.
+
+=== Why TLS is Essential
+
+*   **Confidentiality:** Prevents unauthorized parties from eavesdropping on message content as it travels across the network.
+*   **Integrity:** Detects any tampering or alteration of messages during transit, ensuring data has not been modified.
+*   **Authentication:** Verifies the identity of the AMQ broker to clients (and optionally, clients to the broker through mutual TLS), preventing man-in-the-middle attacks.
+
+=== How TLS Works with AMQ on OpenShift
+
+At its core, TLS relies on asymmetric cryptography (public/private key pairs) for the initial handshake and symmetric cryptography for efficient bulk data encryption. For AMQ on OpenShift, the implementation involves:
+
+.  **Certificates:**
+    *   **Server Certificate:** Issued to the AMQ broker, containing its public key and identifying information. It is signed by a Certificate Authority (CA) and presented to clients during the TLS handshake.
+    *   **CA Certificate:** Used by clients to verify the authenticity of the server's certificate. Clients must trust this CA to establish a secure connection.
+.  **Key Stores and Trust Stores:**
+    *   **Key Store (Server-side):** On the AMQ broker, this is typically handled by the operator, referencing OpenShift Secrets. It internally contains the broker's private key and its corresponding server certificate. The broker uses its private key for decryption during the TLS handshake and to sign data.
+    *   **Trust Store (Client-side):** A repository on the client containing the CA certificates (or server certificates directly) that the client trusts. The client uses this to verify the server's identity by checking if the server's certificate was issued by a trusted CA.
+.  **OpenShift Integration:**
+    *   **Secrets:** OpenShift `Secret` resources are the standard way to store sensitive data like TLS certificates and private keys securely. These secrets are then referenced by the AMQ Operator and mounted into the AMQ broker pods.
+    *   **Broker Custom Resource (CR):** The `ActiveMQArtemis` custom resource definition (CRD) includes a `spec.ssl` block where you specify TLS configuration, referencing the secrets that contain the certificates and keys. The AMQ Operator automatically configures the broker's listeners (acceptors) for TLS based on this configuration.
+    *   **Routes/Services:** OpenShift `Route` or `Service` objects expose the TLS-enabled AMQ broker ports to external clients. For this lab, we will focus on direct service access within the cluster or via a simple route, and configure the broker for TLS directly.
+
+[[lab-encrypting-amq-tls]]
+== Hands-on Lab: Encrypting AMQ Traffic with TLS
+
+In this lab, you will generate self-signed TLS certificates, configure your Red Hat AMQ broker on OpenShift to use them, and then connect an external client securely. This setup mimics a real-world scenario where an internal Certificate Authority (CA) signs certificates for your internal services.
+
+=== Prerequisites
+
+*   An OpenShift cluster with `oc` CLI configured and authenticated.
+*   The OpenShift Operators for Red Hat AMQ Artemis installed and available in your project/namespace.
+*   An existing, deployed Red Hat AMQ broker instance (e.g., named `amq-broker-1`) from previous labs.
+*   `openssl` command-line tool installed on your local machine for certificate generation.
+*   Java Development Kit (JDK) installed locally for the client application.
+
+=== Lab Steps
+
+==== Step 1: Generate Self-Signed TLS Certificates
+
+For this lab, we will create a simple Certificate Authority (CA) and then issue a server certificate signed by our own CA.
+
+.  **Create a working directory for your certificates:**
+   ```bash
+   mkdir ~/amq-tls-certs
+   cd ~/amq-tls-certs
+   ```
+
+.  **Generate a Private Key for your Root CA:**
+   This key will be used to sign your server certificate. Keep it secure.
+   ```bash
+   openssl genrsa -out ca.key 2048
+   ```
+
+.  **Generate a Self-Signed Root CA Certificate:**
+   This certificate will be trusted by your clients.
+   ```bash
+   openssl req -x509 -new -nodes -key ca.key -sha256 -days 365 -out ca.crt -subj "/CN=AMQ Root CA"
+   ```
+   *   `-x509`: Creates a self-signed certificate.
+   *   `-nodes`: No encryption for the private key (suitable for labs).
+   *   `-key ca.key`: Uses the private key generated in the previous step.
+   *   `-days 365`: Sets the validity period to 365 days.
+   *   `-out ca.crt`: Output file for the CA certificate.
+   *   `-subj "/CN=AMQ Root CA"`: Sets the subject (Common Name) for the certificate.
+
+.  **Generate a Private Key for the AMQ Broker Server:**
+   ```bash
+   openssl genrsa -out server.key 2048
+   ```
+
+.  **Generate a Certificate Signing Request (CSR) for the AMQ Broker Server:**
+   Ensure the `CN` (Common Name) matches the expected hostname or IP address your clients will use to connect to the AMQ broker. For OpenShift, this is typically the internal service hostname (e.g., `<service-name>.<namespace>.svc`).
+   ```bash
+   export AMQ_NAMESPACE=$(oc project -q) # Get current project
+   openssl req -new -key server.key -out server.csr -subj "/CN=amq-broker-1.${AMQ_NAMESPACE}.svc"
+   ```
+   *   **Important:** The `CN` must exactly match the hostname that clients will use to connect to the broker for TLS verification to succeed. If you plan to use an OpenShift Route with a specific hostname, you should use that hostname in the `CN` here.
+
+.  **Sign the Server CSR with your Root CA:**
+   This step uses your CA's private key to sign the server's CSR, issuing the server certificate.
+   ```bash
+   openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256
+   ```
+
+   You should now have the following files in your `~/amq-tls-certs` directory:
+   *   `ca.key` (Root CA Private Key)
+   *   `ca.crt` (Root CA Certificate)
+   *   `server.key` (AMQ Server Private Key)
+   *   `server.csr` (AMQ Server Certificate Signing Request)
+   *   `server.crt` (AMQ Server Certificate, signed by your CA)
+
+==== Step 2: Create OpenShift Secrets for TLS Certificates
+
+OpenShift `Secret` objects are used to store sensitive data like certificates and keys. We will create two secrets: one for the AMQ broker's certificate and key, and another for the CA certificate that clients will trust.
+
+.  **Log in to your OpenShift cluster and ensure you are in the correct project/namespace:**
+   ```bash
+   oc login -u developer
+   oc project my-amq-project # Replace with your actual project name
+   ```
+
+.  **Create a Secret for the AMQ Broker's TLS Key and Certificate:**
+   This secret will be referenced by the `ActiveMQArtemis` custom resource.
+   ```bash
+   oc create secret generic amq-broker-tls-server-cert \
+     --from-file=tls.key=server.key \
+     --from-file=tls.crt=server.crt
+   ```
+   *   `tls.key`: The broker's private key.
+   *   `tls.crt`: The broker's server certificate.
+   *   These specific key names (`tls.key`, `tls.crt`) are expected by the AMQ Operator when using `ssl.secretName`.
+
+.  **Create a Secret for the CA Certificate (for client trust):**
+   Clients will use this CA certificate to verify the AMQ broker's identity.
+   ```bash
+   oc create secret generic amq-broker-tls-ca-cert \
+     --from-file=ca.crt=ca.crt
+   ```
+
+.  **Verify the secrets are created:**
+   ```bash
+   oc get secrets
+   ```
+   You should see `amq-broker-tls-server-cert` and `amq-broker-tls-ca-cert` listed.
+
+==== Step 3: Configure the AMQ Broker to use TLS
+
+Now, you will modify your existing `ActiveMQArtemis` custom resource to enable TLS and reference the secrets you just created.
+
+.  **Edit your `ActiveMQArtemis` custom resource:**
+   Replace `amq-broker-1` with the actual name of your broker instance.
+   ```bash
+   oc edit activemqartemis amq-broker-1
+   ```
+
+.  **Add or modify the `spec.ssl` section as follows:**
+   Locate the `spec:` section and add (or modify) the `ssl` subsection.
+   ```yaml
+   # ... (other existing configuration) ...
+   spec:
+     ssl:
+       enabled: true
+       # Secret containing the server's private key and certificate.
+       # The data keys within the secret must be 'tls.key' and 'tls.crt'.
+       secretName: amq-broker-tls-server-cert
+       # clientTrustStore is for mutual TLS (broker authenticating client).
+       # For server-side TLS (client authenticating broker), this is not required.
+       # clientTrustStore:
+       #   secretName: amq-broker-tls-ca-cert # Or a secret containing client CA certs
+       #   keyStorePassword: changeit # Password for the trust store (optional)
+       # clientAuth: false # Set to true for mutual TLS (broker verifies client cert)
+   # ... (rest of the configuration) ...
+   ```
+   *   Set `ssl.enabled: true`.
+   *   Set `ssl.secretName: amq-broker-tls-server-cert`. This tells the operator to use the specified secret for the broker's identity.
+
+.  **Save the changes.**
+   The AMQ Operator will detect the changes and restart the broker pods to apply the new configuration. Monitor the deployment:
+   ```bash
+   oc get pods -w
+   ```
+   Wait for the broker pod(s) to restart and become `Running`.
+
+==== Step 4: Verify TLS Configuration on the Broker
+
+Once the broker pods have restarted, you can verify that TLS is active.
+
+.  **Check broker logs for TLS messages:**
+   ```bash
+   oc logs -f activemqartemis-amq-broker-1-0 # Replace with your actual pod name
+   ```
+   Look for messages indicating SSL/TLS port initialization, e.g., on port 61617 (default for AMQ TLS) or the port you have configured. You might see lines like: `ActiveMQ Artemis messaging connector started: Netty Connector ... Host=0.0.0.0, Port=61617, useSSL=true`.
+
+.  **Use `openssl s_client` to test the TLS endpoint:**
+   First, determine the internal service hostname and the TLS port. The default TLS port for AMQ Artemis is usually 61617.
+   ```bash
+   export AMQ_NAMESPACE=$(oc project -q)
+   BROKER_HOSTNAME="amq-broker-1.${AMQ_NAMESPACE}.svc"
+   BROKER_TLS_PORT="61617" # Default AMQ Artemis TLS port
+   
+   # Test the connection using openssl s_client
+   openssl s_client -connect ${BROKER_HOSTNAME}:${BROKER_TLS_PORT} -CAfile ca.crt
+   ```
+   *   You should see a successful TLS handshake indicated by `Verify return code: 0 (ok)`.
+   *   Inspect the certificate chain presented by the server. It should include your `AMQ Root CA` and the `amq-broker-1.your-namespace.svc` server certificate.
+   *   If you encounter errors like `Connection refused` or `certificate verify error`, double-check your broker configuration, service exposure, the `CN` in your server certificate, and ensure the `ca.crt` you're providing to `openssl s_client` is the correct one.
+
+==== Step 5: Configure an External Client to Connect using TLS
+
+To connect an external client (e.g., a Java client application) to the AMQ broker via TLS, the client needs to trust the server's certificate. Since we used a self-signed CA, the client's trust store must include our `ca.crt`.
+
+.  **Ensure you have Java and the `keytool` utility available locally.**
+
+.  **Import your CA Certificate into a new Java Trust Store:**
+   ```bash
+   keytool -import -file ca.crt -alias amq-root-ca -keystore client.truststore -storepass changeit -noprompt
+   ```
+   *   `-file ca.crt`: Your Root CA certificate.
+   *   `-alias amq-root-ca`: An alias for the certificate in the trust store.
+   *   `-keystore client.truststore`: Creates a new Java KeyStore file to act as your client's trust store.
+   *   `-storepass changeit`: Sets the password for the trust store. *In a production environment, always use a strong, unique password and manage it securely.*
+
+.  **Develop/Run a Sample AMQ Client with TLS Configuration:**
+
+   Here's a simplified example of how you might configure a Java JMS client to connect securely. This code snippet uses the ActiveMQ Artemis client library.
+
+   .  **Create a Java file** named `AmqTlsClient.java`:
+   ```java
+   // AmqTlsClient.java
+   import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+   import javax.jms.*;
+
+   public class AmqTlsClient {
+
+       public static void main(String[] args) throws Exception {
+           // Replace with your actual OpenShift namespace
+           String namespace = System.getenv("AMQ_NAMESPACE");
+           if (namespace == null) {
+               System.err.println("Error: AMQ_NAMESPACE environment variable not set. Please set it to your OpenShift project name.");
+               System.exit(1);
+           }
+           String brokerUrl = "ssl://amq-broker-1." + namespace + ".svc:61617"; // Internal service hostname and TLS port
+           String trustStorePath = "client.truststore"; // Path to your client trust store
+           String trustStorePassword = "changeit";
+
+           // Set system properties for TLS configuration in Java
+           System.setProperty("javax.net.ssl.trustStore", trustStorePath);
+           System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
+           // Optional: For detailed TLS handshake debugging (uncomment for troubleshooting)
+           // System.setProperty("javax.net.debug", "ssl,handshake");
+
+           Connection connection = null;
+           Session session = null;
+           MessageProducer producer = null;
+           MessageConsumer consumer = null;
+
+           try {
+               System.out.println("Attempting to connect to broker: " + brokerUrl);
+               ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerUrl);
+               connection = connectionFactory.createConnection();
+               connection.start();
+               System.out.println("Successfully connected to AMQ broker via TLS.");
+
+               session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+               Queue queue = session.createQueue("myTlsQueue");
+
+               producer = session.createProducer(queue);
+               TextMessage message = session.createTextMessage("Hello from TLS Client! This message is encrypted.");
+               producer.send(message);
+               System.out.println("Sent message: " + message.getText());
+
+               consumer = session.createConsumer(queue);
+               TextMessage receivedMessage = (TextMessage) consumer.receive(5000); // Wait up to 5 seconds
+               if (receivedMessage != null) {
+                   System.out.println("Received message: " + receivedMessage.getText());
+               } else {
+                   System.out.println("No message received within 5 seconds.");
+               }
+
+           } catch (Exception e) {
+               System.err.println("Error connecting to AMQ broker or sending/receiving message: " + e.getMessage());
+               e.printStackTrace();
+           } finally {
+               if (producer != null) producer.close();
+               if (consumer != null) consumer.close();
+               if (session != null) session.close();
+               if (connection != null) connection.close();
+               System.out.println("Client connection closed.");
+           }
+       }
+   }
+   ```
+   .  **Download the AMQ Artemis client JARs:**
+      You will need the ActiveMQ Artemis client JARs. For convenience, you can download the `artemis-jms-client-all.jar` from an ActiveMQ Artemis distribution or a Maven repository. Place it in a `lib` directory.
+      For example, if using Maven, add dependencies for `org.apache.activemq:artemis-jms-client-all`. For this lab, you can download it manually.
+
+   .  **Compile and run the client:**
+      Make sure `client.truststore` and `AmqTlsClient.java` are in the same directory, or adjust the `trustStorePath`.
+      ```bash
+      # Set the namespace environment variable for the client
+      export AMQ_NAMESPACE=$(oc project -q)
+
+      # Compile
+      javac -cp .:./lib/* AmqTlsClient.java
+
+      # Run
+      java -cp .:./lib/* AmqTlsClient
+      ```
+      *   A successful connection and message exchange indicate that TLS encryption is working end-to-end between your external client and the AMQ broker on OpenShift.
+      *   If you encounter `SSLHandshakeException` or similar errors, verify the `brokerUrl` (especially the hostname matching the `CN` in your server certificate), the `trustStorePath`, and `trustStorePassword`.
+
+This hands-on section provides a comprehensive guide from certificate generation to client connection, focusing on enabling server-side TLS for your Red Hat AMQ broker on OpenShift.

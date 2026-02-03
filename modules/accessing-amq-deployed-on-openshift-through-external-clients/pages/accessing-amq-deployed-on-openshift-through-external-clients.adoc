@@ -6,4 +6,61 @@
 
 * Sending and receiving messages: Understand the process of sending messages from external clients to AMQ brokers and receiving messages from the brokers. This includes using appropriate message formats and handling message acknowledgments.
 
-* Monitoring and troubleshooting client connections: Get insights into monitoring the health and performance of client connections, as well as troubleshooting common issues that may arise when external clients interact with the AMQ broker on OpenShift. This may involve using tools like AMQ Console or command-line utilities for monitoring and logging.
+* Monitoring and troubleshooting client connections: Get insights into monitoring the health and performance of client connections, as well as troubleshooting common issues that may arise when external clients interact with the AMQ broker on OpenShift. This may involve using tools like AMQ Console or command-line utilities for monitoring and logging.#  Accessing AMQ deployed on OpenShift through external clients
+
+=== Accessing AMQ deployed on OpenShift through external clients
+
+When Red Hat AMQ is deployed on OpenShift, external applications often need to connect to it to send or receive messages. This involves exposing the AMQ broker's network services securely.
+
+*   **Exposing AMQ**: On OpenShift, AMQ brokers are typically exposed to external clients using OpenShift `Routes` or `Services` of type `NodePort` or `LoadBalancer`.
+    *   `Routes` provide a hostname and path to access services, often integrated with TLS termination.
+    *   `Services` like `NodePort` expose a port on each node, while `LoadBalancer` integrates with cloud provider load balancers.
+*   **Client Connectivity**: External clients (e.g., Java, Python, Node.js applications) use standard AMQP, OpenWire, STOMP, or MQTT protocols to connect.
+    *   They need the AMQ broker's exposed hostname/IP and port.
+    *   Secure connections using TLS are crucial for protecting message traffic.
+*   **Sending and Receiving Messages**: Once connected, clients can interact with configured queues and topics on the AMQ broker to exchange messages.
+*   **Monitoring and Troubleshooting**:
+    *   OpenShift monitoring tools (e.g., Prometheus, Grafana) can track broker health and message flow.
+    *   AMQ's built-in Jolokia API (via HTTP) allows for monitoring broker metrics.
+    *   Client-side logging helps diagnose connectivity or message processing issues.
+
+[source,java]
+.Example Java JMS client connection (simplified)
+----
+import org.apache.qpid.jms.JmsConnectionFactory;
+import javax.jms.*;
+
+public class AmqClient {
+    public static void main(String[] args) throws JMSException {
+        // AMQ exposed via a secured OpenShift Route
+        String brokerUrl = "amqps://amq-broker-route-amq-app.apps.openshift.example.com";
+        String username = "myuser";
+        String password = "mypassword";
+
+        JmsConnectionFactory factory = new JmsConnectionFactory(brokerUrl);
+        factory.setUsername(username);
+        factory.setPassword(password);
+
+        try (Connection connection = factory.createConnection();
+             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)) {
+
+            connection.start(); // Start the connection to receive messages
+
+            Destination queue = session.createQueue("myQueue");
+            MessageProducer producer = session.createProducer(queue);
+            TextMessage message = session.createTextMessage("Hello from external client!");
+            producer.send(message);
+            System.out.println("Sent message: " + message.getText());
+
+            MessageConsumer consumer = session.createConsumer(queue);
+            Message receivedMessage = consumer.receive(5000); // Wait 5 seconds
+            if (receivedMessage instanceof TextMessage) {
+                System.out.println("Received message: " + ((TextMessage) receivedMessage).getText());
+            }
+
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
+    }
+}
+----

@@ -57,3 +57,179 @@ Configuring AMQ brokers involves setting up and managing the broker instances de
      artemis topic create --name my.topic
      ```
 
+#  Configuring AMQ brokers
+
+= Configuring AMQ Brokers on OpenShift
+
+This section delves into the critical process of configuring Red Hat AMQ brokers deployed on an OpenShift cluster. Proper broker configuration is essential to tailor the messaging infrastructure to specific application requirements, ensuring performance, reliability, and security.
+
+== Detailed Technical Explanation: AMQ Broker Configuration
+
+When AMQ brokers are deployed on OpenShift using the Red Hat AMQ Broker Operator, their configuration is managed primarily through **Custom Resources (CRs)**. Specifically, the `ActiveMQArtemis` custom resource defines the desired state of your AMQ Broker instance. The Operator watches for changes to this CR and automatically reconciles the OpenShift resources (like Deployments, StatefulSets, Services, PersistentVolumeClaims) to match the specified configuration.
+
+This approach simplifies configuration management, allowing you to define your broker's characteristics declaratively. Any modifications to the `ActiveMQArtemis` CR are detected by the Operator, which then applies the necessary updates to the underlying broker pods and associated resources.
+
+Key aspects of AMQ broker configuration often include:
+
+. **Persistence**:
+*   By default, AMQ brokers might run in a non-persistent mode, meaning messages are lost if the broker restarts. For most production environments, persistence is crucial.
+*   Enabling persistence ensures that messages, queues, and subscriptions are stored on disk, allowing the broker to recover its state after a restart or failure.
+*   On OpenShift, persistence typically involves provisioning a `PersistentVolumeClaim` (PVC) that maps to underlying persistent storage (e.g., GlusterFS, CephFS, NFS, CSI volumes).
+
+. **Networking and Acceptors**:
+*   AMQ brokers expose various network endpoints (called *acceptors*) that clients use to connect and exchange messages.
+*   These acceptors define the protocols (e.g., OpenWire, AMQP, STOMP, MQTT), ports, and security settings for incoming connections.
+*   You can configure multiple acceptors for different client types or security requirements.
+*   On OpenShift, these acceptors are exposed via OpenShift `Service` resources, and optionally via `Route` resources for external access.
+
+. **Broker Properties and Core Settings**:
+*   The underlying ActiveMQ Artemis broker has a vast array of configuration properties that control its behavior, such as message expiry, dead-lettering, memory limits, thread pools, and plugin integrations.
+*   Many of these can be configured directly within the `ActiveMQArtemis` CR, often through a `brokerProperties` field that allows you to inject XML snippets or specific key-value pairs that the broker's `broker.xml` would typically contain.
+
+. **Resource Allocation**:
+*   While not strictly "broker configuration," setting appropriate CPU and memory requests and limits for the broker pods within the `ActiveMQArtemis` CR is vital for performance and stability on OpenShift.
+
+. **High Availability (HA)**:
+*   For mission-critical applications, configuring broker HA is paramount. This involves deploying multiple broker instances that can take over each other's workload in case of failure, ensuring continuous message processing.
+*   The AMQ Broker Operator simplifies HA setup by allowing you to define multiple replicas within the `ActiveMQArtemis` CR.
+
+Understanding how to manipulate the `ActiveMQArtemis` CR is the cornerstone of managing your AMQ messaging infrastructure on OpenShift.
+
+== Hands-on Activity: Configuring an AMQ Broker
+
+In this lab, you will learn how to modify the configuration of an existing AMQ Broker instance deployed on OpenShift by editing its `ActiveMQArtemis` Custom Resource. We will focus on enabling persistence for the broker, a critical step for any production deployment.
+
+=== Prerequisites
+
+Before you begin, ensure you have:
+
+*   An OpenShift cluster with `oc` CLI configured and logged in as a user with sufficient permissions (e.g., `cluster-admin` or project-level admin).
+*   An `ActiveMQArtemis` instance already deployed in your project. For the purpose of this lab, we'll assume a broker named `amq-broker` exists in a project named `amq-project`. If your setup is different, adjust the names accordingly.
+
+[NOTE]
+If you do not have an `ActiveMQArtemis` instance deployed, refer to the "Deploying AMQ on OpenShift" section of the course to set one up before proceeding.
+
+=== Lab Objective
+
+*   Modify the `ActiveMQArtemis` Custom Resource to enable persistence for the broker.
+*   Verify that persistence has been successfully configured.
+
+=== Steps
+
+.   **Log in to OpenShift and Select Your Project**
+
+    First, ensure you are logged into your OpenShift cluster and are in the correct project where your AMQ broker is deployed.
+
+    ```bash
+    oc login --token=<YOUR_TOKEN> --server=<YOUR_OCP_API_URL>
+    oc project amq-project
+    ```
+
+    [TIP]
+    Replace `<YOUR_TOKEN>` and `<YOUR_OCP_API_URL>` with your actual OpenShift credentials.
+
+.   **Identify Your `ActiveMQArtemis` Instance**
+
+    List the `ActiveMQArtemis` instances in your current project to confirm the name of your broker.
+
+    ```bash
+    oc get activemqartemis
+    ```
+
+    You should see output similar to this:
+
+    ```
+    NAME         AGE
+    amq-broker   15m
+    ```
+
+    In this example, our broker instance is named `amq-broker`.
+
+.   **Edit the `ActiveMQArtemis` Custom Resource**
+
+    Now, we will use the `oc edit` command to modify the `amq-broker` instance's Custom Resource definition. This will open a YAML editor (usually `vi` or `nano`) in your terminal.
+
+    ```bash
+    oc edit activemqartemis amq-broker
+    ```
+
+.   **Enable Persistence**
+
+    Inside the editor, navigate to the `spec` section. To enable persistence, you need to add or modify the `spec.storage` field. Look for the `storage` section. If it's not present, add it.
+    Change `storage.type` from `ephemeral` to `persistent` and specify a `size`.
+
+    [BEFORE]
+    ```yaml
+    # ... other spec fields
+    spec:
+      deploymentPlan:
+        size: 1
+      # ... other fields
+      storage:
+        type: ephemeral # <<-- This needs to be changed
+    # ...
+    ```
+
+    [AFTER]
+    ```yaml
+    # ... other spec fields
+    spec:
+      deploymentPlan:
+        size: 1
+      # ... other fields
+      storage:
+        type: persistent # <<-- Changed to persistent
+        size: 2Gi        # <<-- Added a storage size
+    # ...
+    ```
+
+    [IMPORTANT]
+    The `size` for `persistent` storage specifies the requested capacity for the `PersistentVolumeClaim` (PVC). Ensure your OpenShift cluster has a default `StorageClass` configured or specify a `storageClassName` if needed. The `2Gi` example requests 2 Gigabytes of storage.
+
+    Save the changes and exit the editor. (In `vi`, press `Esc`, then type `:wq` and press `Enter`).
+
+.   **Observe the Operator's Reconciliation**
+
+    After saving, the AMQ Broker Operator will detect the change in the `ActiveMQArtemis` CR. It will then initiate a rolling update or recreate the broker pod(s) to apply the new configuration.
+
+    Monitor the pods in your project:
+
+    ```bash
+    oc get pods -w
+    ```
+
+    You will likely see the existing `amq-broker-ss-0` pod terminating and a new one being created. Wait until the new pod is `Running` and `Ready`.
+
+.   **Verify Persistence**
+
+    Once the new broker pod is running, verify that a `PersistentVolumeClaim` (PVC) has been created for your broker instance.
+
+    ```bash
+    oc get pvc -l activemq-artemis-name=amq-broker
+    ```
+
+    You should see output similar to this, indicating a PVC has been provisioned:
+
+    ```
+    NAME                         STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+    amq-broker-data-amq-broker-0   Bound    pvc-f7d9e1a1-2b3f-4e0a-9e7b-c0f5f0f0f0f0   2Gi        RWO            standard       2m
+    ```
+
+    Also, you can describe the AMQ broker pod and check its mounted volumes:
+
+    ```bash
+    oc describe pod amq-broker-ss-0
+    ```
+
+    Look for the `Volumes` and `Volume Mounts` sections to confirm the persistent volume is correctly mounted. You should see a mount for `/var/lib/artemis/data`.
+
+    Finally, check the broker logs to confirm persistence is active.
+
+    ```bash
+    oc logs amq-broker-ss-0 | grep -i "persistence enabled"
+    ```
+
+    You should see log entries indicating that persistence is enabled and the journal is being used.
+
+[IMPORTANT]
+Any further changes to the `ActiveMQArtemis` CR (e.g., adding network acceptors, modifying broker properties) would follow a similar pattern: `oc edit activemqartemis <broker-name>`, modify the YAML, save, and observe the Operator's reconciliation. This declarative approach ensures consistency and simplifies operational tasks.

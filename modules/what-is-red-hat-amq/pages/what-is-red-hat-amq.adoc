@@ -25,4 +25,89 @@ Red Hat AMQ is a robust, flexible, and high-performance messaging platform based
 - **Accessing AMQ from External Clients**:
   - **Connecting Clients**: External clients can connect to AMQ deployed on OpenShift using supported messaging protocols.
   - **Sending and Receiving Messages**: Clients can send and receive messages, leveraging AMQ's reliable messaging capabilities.
-  - **Monitoring and Troubleshooting**: Tools and techniques for monitoring client connections and troubleshooting
+  - **Monitoring and Troubleshooting**: Tools and techniques for monitoring client connections and troubleshooting#  What is Red Hat AMQ
+
+[#what-is-red-hat-amq]
+=== What is Red Hat AMQ
+
+Red Hat AMQ (Active Message Queues) is a flexible, open-source messaging platform based on popular upstream projects like Apache ActiveMQ and Apache Kafka. It's designed to facilitate communication between different applications and services in a distributed enterprise environment.
+
+AMQ acts as a *message-oriented middleware (MOM)*, enabling asynchronous communication by sending messages between decoupled systems. This helps to build resilient and scalable applications.
+
+Key features and components include:
+
+*   **Diverse Messaging Patterns**: Supports point-to-point (queues) and publish/subscribe (topics) models.
+*   **Multiple Protocols**: Compatible with various industry-standard messaging protocols such as OpenWire, AMQP, MQTT, STOMP, and Kafka.
+*   **High Performance and Scalability**: Designed for high throughput and low latency, capable of handling millions of messages.
+*   **Integration**: Seamlessly integrates with other Red Hat products and cloud-native environments, especially OpenShift.
+
+AMQ is ideal for use cases such as:
+
+*   **Microservices Communication**: Decoupling services in a microservices architecture.
+*   **Event Streaming**: Processing real-time data streams and events.
+*   **Data Integration**: Connecting disparate systems and data sources.
+*   **Workflow Management**: Orchestrating complex business processes.
+
+.Example: AMQ Broker Types
+While not code for "what it is," this illustrates the core components of AMQ that handle message routing:
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-amq-broker
+spec:
+  deploymentPlan:
+    size: 1 # Number of broker instances
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.9
+----#  What is Red Hat AMQ
+
+ifndef::root_attributes[]
+:root_attributes:
+endif::[]
+
+=== What is Red Hat AMQ
+
+Red Hat AMQ (Active Message Queue) is a flexible, lightweight, and high-performance messaging platform that delivers a seamless communication experience for applications. It is an open-source message-oriented middleware (MOM) based on Apache ActiveMQ and Apache Kafka projects.
+
+Key aspects:
+
+*   **Overview**: AMQ provides reliable asynchronous messaging capabilities, enabling decoupled microservices and distributed applications to communicate efficiently.
+*   **Components**:
+    *   **AMQ Broker (based on Apache ActiveMQ Artemis)**: A robust, high-performance message broker supporting various messaging protocols (AMQP, MQTT, STOMP, OpenWire, HornetQ Core Protocol).
+    *   **AMQ Streams (based on Apache Kafka)**: A distributed streaming platform for building real-time data pipelines and streaming applications.
+    *   **AMQ Interconnect (based on Apache Qpid Dispatch Router)**: A lightweight message router for connecting messaging components across different locations and infrastructures.
+*   **Use Cases**:
+    *   **Microservices Communication**: Facilitates reliable communication between decoupled microservices.
+    *   **Event-Driven Architectures**: Enables processing of events and real-time data streams.
+    *   **Integration Patterns**: Supports various enterprise integration patterns (e.g., publish-subscribe, point-to-point).
+    *   **Data Streaming**: Used for high-throughput, fault-tolerant data ingestion and processing (with AMQ Streams).
+
+.Example AMQ Broker architecture
+[source,plantuml]
+----
+@startuml
+skinparam handwritten true
+skinparam monochrome true
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+cloud "Client Application" as app1
+cloud "Client Application" as app2
+
+node "Red Hat OpenShift Cluster" {
+  component "AMQ Broker" as amq_broker
+  component "Queue (my.queue)" as q
+  component "Topic (my.topic)" as t
+}
+
+app1 --> amq_broker : Connect (Producer/Consumer)
+amq_broker --> q : Route Message
+app2 --> amq_broker : Connect (Producer/Consumer)
+q --> app2 : Deliver Message (Consumer)
+amq_broker --> t : Publish Message
+app1 --> t : Subscribe (Consumer)
+app2 --> t : Subscribe (Consumer)
+
+@enduml
+----

@@ -64,4 +64,162 @@ Before deploying AMQ on OpenShift, ensure you have the following prerequisites i
    - Broker: `amq-broker.yaml`
 
      ```yaml
-     apiVersion: broker.amq.io/v
+     apiVersion: broker.amq.io/v#  Steps to deploy AMQ on OpenShift
+
+= Steps to Deploy Red Hat AMQ on OpenShift
+:navtitle: Deploying AMQ on OpenShift
+
+This section guides you through the essential process of deploying Red Hat AMQ on an OpenShift cluster. We will leverage the Red Hat AMQ Broker Operator, which significantly simplifies the deployment and ongoing management of AMQ Broker instances within an OpenShift environment. By the end of this module, you will have a running AMQ Broker instance ready for initial configuration and subsequent client access.
+
+== Prerequisites for Deployment
+
+Before initiating the deployment of Red Hat AMQ Broker on OpenShift, ensure the following prerequisites are met. These foundational elements are crucial for a smooth and successful installation.
+
+*   **OpenShift Cluster**: An active and properly configured OpenShift Container Platform (OCP) cluster (version 4.x or later). The cluster must have sufficient computational resources (CPU, memory, storage) to host the AMQ Broker pods and associated components.
+*   **OpenShift CLI (`oc`)**: The `oc` command-line interface must be installed on your local machine and configured to authenticate with your target OpenShift cluster. This allows for command-line interactions for deployment and verification.
+*   **Cluster Administrator or Project-Specific Privileges**: To install Operators from the OperatorHub and create Custom Resources, you typically require cluster-administrator privileges initially. Once the Operator is installed, you will need permissions within the specific project (namespace) where you intend to deploy AMQ Broker instances.
+*   **Access to Red Hat Container Registry**: The AMQ Broker images are hosted on `registry.redhat.io`. Your OpenShift cluster must be configured to pull images from this registry, which usually involves having a valid pull secret configured at the cluster level or within your project.
+
+== Understanding the AMQ Broker Operator
+
+Deploying and managing complex applications like message brokers on Kubernetes can be challenging. The Red Hat AMQ Broker Operator addresses this by automating the operational knowledge required to run AMQ Broker on OpenShift. It extends the Kubernetes API, acting as a "human operator" in software, watching for custom resources and managing the lifecycle of AMQ Broker instances.
+
+Key benefits of utilizing the Operator pattern for AMQ Broker:
+
+*   **Simplified Deployment**: Abstracts away the complexities of Kubernetes deployments, services, stateful sets, and persistent volume claims, allowing you to define your broker using a simple Custom Resource.
+*   **Automated Lifecycle Management**: Handles tasks such as initial deployment, scaling up/down, upgrades, failover, and self-healing of broker instances.
+*   **Configuration Management**: Provides a declarative API to define broker configurations, making it easier to manage and version control your deployments.
+*   **Best Practices Enforcement**: Encapsulates Red Hat's recommended practices for running AMQ Broker on OpenShift, ensuring robust and performant deployments.
+
+== Deploying AMQ Broker on OpenShift (Hands-on Lab)
+
+This hands-on lab activity will guide you through the process of installing the Red Hat AMQ Broker Operator and subsequently deploying a basic AMQ Broker instance on your OpenShift cluster.
+
+=== Step 1: Log in to Your OpenShift Cluster
+
+Before interacting with the cluster, ensure you are logged in using the `oc` CLI.
+
+.Command
+[source,bash]
+----
+oc login --token=<YOUR_TOKEN> --server=<YOUR_OPENSHIFT_API_URL>
+----
+Replace `<YOUR_TOKEN>` with your OpenShift authentication token and `<YOUR_OPENSHIFT_API_URL>` with the API endpoint of your cluster. You can obtain your login token from the OpenShift web console by clicking your username -> *Copy Login Command* -> *Display Token*.
+
+=== Step 2: Create a Dedicated OpenShift Project
+
+It is a best practice to isolate applications within their own projects (namespaces) for better resource management, security, and organization.
+
+.Command
+[source,bash]
+----
+oc new-project amq-broker-project
+----
+
+Upon successful creation, the CLI output will confirm that you are now operating within the newly created project:
+```text
+Now using project "amq-broker-project" on server "https://api.cluster-name.example.com:6443".
+```
+
+=== Step 3: Install the Red Hat AMQ Broker Operator
+
+The AMQ Broker Operator is available through OpenShift's OperatorHub, a catalog of certified Operators that simplifies installation.
+
+.Procedure
+. **Access the OpenShift Web Console**: Open your web browser and navigate to the OpenShift Container Platform web console.
+. **Navigate to OperatorHub**: In the left-hand navigation pane, click *Operators* -> *OperatorHub*.
+. **Search for the Operator**: Use the search bar to find "Red Hat AMQ Broker".
+. **Select the Operator**: Click on the "Red Hat AMQ Broker" tile to view its details.
+. **Initiate Installation**: On the Operator details page, click the *Install* button.
+. **Configure Installation Settings**: On the "Install Operator" page, configure the following options:
+    *   **Installation mode**: Select `A specific namespace on the cluster`.
+    *   **Installed Namespace**: Choose `amq-broker-project` from the dropdown list (the project you created in Step 2).
+    *   **Update channel**: Select the recommended stable channel, typically `7.x` or the latest stable release.
+    *   **Approval strategy**: Set this to `Automatic` to allow the Operator to be installed and updated without manual intervention.
+. **Confirm Installation**: Click *Install*.
+
+The Operator will now begin its installation process. You can monitor its progress by navigating to *Operators* -> *Installed Operators* and ensuring `amq-broker-project` is selected in the "Project" dropdown. Wait until the "Status" column for the "Red Hat AMQ Broker" Operator displays `Succeeded`. This indicates the Operator is ready to manage AMQ Broker instances.
+
+=== Step 4: Deploy an AMQ Broker Instance
+
+With the Operator successfully installed, you can now create an instance of the AMQ Broker using a Custom Resource. The Operator will watch for this resource and provision all necessary Kubernetes objects (Deployment, StatefulSet, Services, etc.) to run your broker.
+
+.Procedure
+. **Access the Operator's API**: In the OpenShift web console, navigate to *Operators* -> *Installed Operators*.
+. **Select the AMQ Broker Operator**: Click on the "Red Hat AMQ Broker" Operator within your `amq-broker-project`.
+. **Create an AMQ Broker Instance**: Go to the *AMQ Broker* tab (this tab might also be labeled *ActiveMQ Artemis*, as it's the underlying technology).
+. **Initiate Instance Creation**: Click the *Create Instance* button (or *Create ActiveMQArtemis*).
+. **Configure the Broker Instance**: A YAML editor will appear, pre-populated with a basic template. Replace its content with the following minimal configuration to deploy a single-node broker:
++
+[IMPORTANT]
+====
+This configuration deploys a basic, non-persistent AMQ Broker suitable for demonstration and testing. For production environments, you must configure persistence (e.g., using a PersistentVolumeClaim), replica counts for high availability, resource limits, and robust security settings.
+====
++
+[source,yaml]
+----
+apiVersion: broker.amq.io/v1beta1
+kind: ActiveMQArtemis
+metadata:
+  name: my-amq-broker
+spec:
+  deploymentPlan:
+    size: 1 # Number of broker instances (pods)
+    image: registry.redhat.io/amq7/amq-broker-rhel8:7.11 # Specify the exact image tag
+    # NOTE: The image tag above is an example. You should verify the latest
+    #       available supported image for your Operator version.
+    #       You can typically find supported images in the Operator's documentation
+    #       or by inspecting the cluster's imagestreams or package manifests.
+  acceptors: # Define network listeners for different protocols
+    - name: amqp
+      protocols: AMQP
+      port: 5672
+      exposed: true # Expose this acceptor via an OpenShift Route
+    - name: core
+      protocols: CORE
+      port: 61616
+  console: # Configure the web-based management console
+    expose: true # Expose the console via an OpenShift Route
+----
++
+. **Deploy the Broker**: Click the *Create* button.
+
+The Operator will now begin reconciling the `ActiveMQArtemis` custom resource. This involves creating a StatefulSet, services, routes, and other necessary Kubernetes components to bring your AMQ Broker online. This process may take a few moments.
+
+=== Step 5: Verification of Successful Deployment
+
+Once the deployment process is initiated, you can verify its success through the OpenShift web console.
+
+.Procedure
+. **Check Broker Instance Status**:
+    *   Navigate back to *Operators* -> *Installed Operators* -> "Red Hat AMQ Broker" -> *AMQ Broker* tab.
+    *   You should see your `my-amq-broker` instance listed. Its "Status" should eventually transition to `Running` or `Running (with 1 broker)`.
+. **Inspect Pods**:
+    *   Go to *Workloads* -> *Pods*.
+    *   You should observe a pod named `my-amq-broker-ss-0` (where `ss` denotes StatefulSet) in a `Running` status.
+. **Verify Services**:
+    *   Navigate to *Networking* -> *Services*.
+    *   You should see services created for your broker, such as `my-amq-broker-amqp`, `my-amq-broker-core`, and `my-amq-broker-console`. These services enable internal cluster communication to the broker.
+. **Access the AMQ Console (if exposed)**:
+    *   Go to *Networking* -> *Routes*.
+    *   Locate the route associated with `my-amq-broker-console`. The `console.expose: true` in our CR creates this route.
+    *   Click on the *Location* URL. This will open the AMQ console login page in a new browser tab.
+    *   You can attempt to log in. For a fresh, unconfigured broker, the default username/password is often `admin`/`admin`. *NOTE: This is highly insecure for production and requires immediate change or integration with an external identity provider.* Reaching the login page confirms successful exposure.
+. **Verify Acceptor Routes**:
+    *   You can also check for routes for the `amqp` acceptor (e.g., `my-amq-broker-amqp`) if `exposed: true` was set for it in the CR. This route provides external access for AMQP clients.
+
+Congratulations! You have successfully deployed a Red Hat AMQ Broker instance on OpenShift. The broker is now running and reachable within your cluster, with its console and AMQP acceptor exposed externally.
+
+== Troubleshooting Deployment Issues
+
+Should you encounter any problems during the deployment process, here are common areas to investigate:
+
+*   **Operator Pod Logs**: If the Operator fails to provision the broker, check the logs of the AMQ Broker Operator pod. Go to *Operators* -> *Installed Operators*, click on the "Red Hat AMQ Broker" Operator, then navigate to the *Pod* tab and review the logs for any errors.
+*   **Broker Pod Events and Logs**: If the broker pod (`my-amq-broker-ss-0`) is not starting or is in an error state, inspect its *Events* and *Logs* tabs under *Workloads* -> *Pods*. This often reveals issues like image pull failures, resource constraints, or startup errors.
+*   **Custom Resource Definition (CRD) Validation**: Ensure your `ActiveMQArtemis` YAML configuration is syntactically correct and adheres to the Operator's CRD schema. Small typos or incorrect fields can prevent deployment.
+*   **Resource Quotas**: Verify that the OpenShift project (`amq-broker-project`) has sufficient resource quotas (CPU, memory, storage) to accommodate the AMQ Broker pod. If quotas are too restrictive, pods might remain in a `Pending` state.
+*   **Image Pull Issues**: If the broker pod is stuck in `ImagePullBackOff`, it indicates a problem pulling the container image from `registry.redhat.io`.
+    *   Ensure the `image` tag in your `ActiveMQArtemis` CR is correct and exists.
+    *   Confirm that your OpenShift cluster has the necessary image pull secrets or a global pull secret configured to access `registry.redhat.io`.
+*   **OpenShift Routes**: If you cannot access the AMQ Console or external acceptors, check the *Networking* -> *Routes* section. Ensure the routes exist and are properly configured, and that your OpenShift router is functioning correctly.
+*   **OpenShift Events**: Check the *Events* tab for your project (*Home* -> *Projects* -> `amq-broker-project` -> *Details* -> *Events*) for any cluster-level events that might indicate issues affecting your deployment.

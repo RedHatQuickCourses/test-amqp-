@@ -31,4 +31,224 @@ To configure queues and exchanges on your AMQ deployment on OpenShift, follow th
 3. **Create an Exchange**:
    - In the AMQ Console, navigate to the *Exchanges* tab.
    - Click *Create Exchange*.
-   - Select the desired *Exchange type* (Direct, Fanout, or
+   - Select the desired *Exchange type* (Direct, Fanout, or#  Setting up queues and exchanges
+
+```asciidoc
+= Setting up Queues and Exchanges
+
+This section delves into the fundamental concepts of message routing within Red Hat AMQ on OpenShift: queues and exchanges (more specifically, addresses and routing types in ActiveMQ Artemis). Understanding how to set these up is crucial for building robust and scalable messaging solutions.
+
+== 1. Detailed Technical Explanation
+
+In the context of Red Hat AMQ (which leverages Apache ActiveMQ Artemis), message routing is managed through a combination of *addresses* and *queues*. While other message brokers might use a distinct "exchange" concept (like RabbitMQ), ActiveMQ Artemis consolidates this functionality within its address model, allowing for both point-to-point and publish-subscribe messaging patterns.
+
+=== Understanding Addresses and Queues
+
+At its core, ActiveMQ Artemis uses:
+
+*   **Addresses:** An address is a named entity to which producers send messages. It acts as a logical endpoint for messages. Messages sent to an address are then routed to one or more queues associated with that address.
+*   **Queues:** A queue is a physical container that holds messages until they are consumed by a client. Queues are durable and store messages for consumers. Multiple queues can be bound to a single address.
+
+The relationship between addresses and queues defines the messaging pattern:
+
+*   **Anycast Addresses (Point-to-Point):**
+    *   Messages sent to an anycast address are routed to *one and only one* queue bound to that address.
+    *   If multiple queues are bound to an anycast address, messages are typically distributed among them in a round-robin fashion or based on other distribution policies.
+    *   This is ideal for worker queues where each message needs to be processed by a single consumer.
+
+*   **Multicast Addresses (Publish-Subscribe):**
+    *   Messages sent to a multicast address are routed to *all* queues bound to that address.
+    *   Each queue receives a copy of the message, allowing multiple consumers to independently process the same message.
+    *   This is suitable for broadcasting information to multiple subscribers.
+
+=== Configuring Addresses and Queues in Red Hat AMQ on OpenShift
+
+When AMQ is deployed on OpenShift, you primarily interact with the `ActiveMQArtemis` Custom Resource (CR) to define the broker's configuration, including its addresses and queues. Additionally, the AMQ Management Console provides a graphical interface for managing these entities dynamically.
+
+==== Auto-Creation of Queues and Addresses
+
+By default, ActiveMQ Artemis can be configured to auto-create addresses and queues when a producer attempts to send a message to a non-existent address or a consumer attempts to connect to a non-existent queue. While convenient for development, it's often preferred to explicitly define these in production environments for better control and predictability.
+
+==== Manual Configuration through the `ActiveMQArtemis` Custom Resource
+
+For declarative and persistent configuration, you define addresses and queues within the `spec.brokerProperties` or `spec.addresses` section of your `ActiveMQArtemis` CR.
+
+**Example: Defining an Anycast Queue**
+
+To create an anycast queue, you define an address and bind a queue to it with an `anycast` routing type.
+
+```xml
+<configuration>
+   <addresses>
+      <address name="orders.queue">
+         <anycast>
+            <queue name="orderProcessorQueue"/>
+         </anycast>
+      </address>
+   </addresses>
+</configuration>
+```
+
+When defining this in the `ActiveMQArtemis` CR, it would typically go into `spec.brokerProperties` as an XML string or, for simpler cases, directly under `spec.addresses` using a structured format if the operator supports it.
+
+**Example: Defining a Multicast Queue**
+
+To create a multicast setup, you define an address and bind one or more queues to it with a `multicast` routing type.
+
+```xml
+<configuration>
+   <addresses>
+      <address name="news.topic">
+         <multicast>
+            <queue name="subscriberOneQueue"/>
+            <queue name="subscriberTwoQueue"/>
+         </multast>
+      </address>
+   </addresses>
+</configuration>
+```
+
+**Understanding Address Settings**
+
+Beyond basic creation, `address-settings` allow you to define crucial behaviors for messages on specific addresses or sets of addresses:
+
+*   `max-size-bytes`: Maximum size of messages allowed in the address/queue.
+*   `redelivery-delay`: Delay before a message is redelivered after a failure.
+*   `max-redeliveries`: Maximum number of redelivery attempts before moving to a dead-letter queue.
+*   `dead-letter-address`: The address to which messages are sent after `max-redeliveries`.
+*   `expiry-address`: The address to which expired messages are sent.
+*   `message-counter-history-day-limit`: How long to keep message count history.
+*   `last-value-queue`: For queues that only ever want the last value sent (e.g., stock tickers).
+*   `auto-create-addresses`, `auto-create-queues`: Control automatic creation behavior.
+
+These settings can be applied using wildcards (e.g., `*` or `#`) to match multiple addresses.
+
+```xml
+<configuration>
+   <address-settings>
+      <address-setting match="news.#">
+         <redelivery-delay>5000</redelivery-delay>
+         <max-redeliveries>3</max-redeliveries>
+         <dead-letter-address>DLQ</dead-letter-address>
+      </address-setting>
+      <address-setting match="orders.*">
+         <max-size-bytes>10485760</max-size-bytes> <!-- 10MB -->
+      </address-setting>
+   </address-settings>
+</configuration>
+```
+
+==== Configuration via the AMQ Console
+
+The AMQ Management Console (Hawtio console) provides a user-friendly web interface to create and manage addresses and queues directly on a running broker. This is particularly useful for ad-hoc creation, monitoring, and debugging, though for production deployments, declarative configuration via the CR is recommended for reproducibility.
+
+*   You can create new queues, bind them to existing addresses, or create new addresses.
+*   You can view message counts, consumer counts, and browse messages within queues.
+
+The console translates your actions into runtime configuration changes on the broker.
+
+== 2. Hands-on Activity: Configuring Queues and Addresses
+
+This lab will guide you through creating an anycast queue and a multicast address with a queue using the AMQ Management Console. You will also briefly explore how to inspect these configurations.
+
+**Prerequisites:**
+
+*   An OpenShift cluster with the OpenShift CLI (`oc`) configured.
+*   Red Hat AMQ Broker successfully deployed on OpenShift (as covered in previous labs).
+*   Access to the AMQ Management Console URL and credentials.
+
+---
+
+**Lab Goal:**
+
+1.  Create an anycast queue for point-to-point messaging.
+2.  Create a multicast address and bind a queue for publish-subscribe messaging.
+3.  Verify the creation using the AMQ Console.
+
+---
+
+**Steps:**
+
+=== Task 1: Access the AMQ Management Console
+
+1.  **Log in to OpenShift:**
+    ```bash
+    oc login -u <your_username> -p <your_password> <openshift_api_url>
+    ```
+
+2.  **Navigate to your AMQ project:**
+    ```bash
+    oc project <your_amq_project_name>
+    ```
+    (Replace `<your_amq_project_name>` with the project where your AMQ broker is deployed, e.g., `amq-broker`).
+
+3.  **Get the AMQ Console Route:**
+    Find the URL for the AMQ broker's management console (Hawtio). It's usually exposed as a route.
+    ```bash
+    oc get route -l app.kubernetes.io/name=<broker-instance-name> -o custom-columns=NAME:.metadata.name,URL:.spec.host | grep console
+    ```
+    (Replace `<broker-instance-name>` with the name of your `ActiveMQArtemis` instance, e.g., `amq-broker-instance`).
+    The output will give you a URL like `https://<console-route-name>-<project-name>.<cluster-domain>/console`.
+
+4.  **Open the Console:**
+    Open the URL in your web browser. You will likely encounter a certificate warning; proceed past it.
+    Log in using the AMQ console credentials (e.g., `admin`/`admin` if configured this way in your broker CR, or the credentials you set up).
+
+=== Task 2: Create an Anycast Queue
+
+We will create an anycast queue named `orderProcessorQueue` under the address `orders.queue`.
+
+1.  **Navigate to the `Queues` tab:**
+    In the AMQ Management Console (Hawtio), on the left navigation pane, expand *Artemis* and click on *Queues*.
+
+2.  **Add a New Queue:**
+    Click the green "Create" button (or "Add Queue") at the top right of the *Queues* list.
+
+3.  **Configure the Anycast Queue:**
+    *   **Address:** `orders.queue` (This will also implicitly create the `orders.queue` address if it doesn't exist, and set its routing type to `ANYCAST` because of how we're creating the queue).
+    *   **Name:** `orderProcessorQueue`
+    *   **Routing Type:** Select `ANYCAST` (This should be the default).
+    *   **Durable:** Check this box (highly recommended for production).
+    *   Leave other settings as default for now.
+    Click "Create".
+
+4.  **Verify Creation:**
+    You should now see `orderProcessorQueue` listed under the `Queues` tab.
+    You can click on the queue name to see its details (Message Count, Consumers, etc.).
+    Navigate to the *Addresses* tab. You should see `orders.queue` listed with an `ANYCAST` routing type, and it should show `orderProcessorQueue` as a bound queue.
+
+=== Task 3: Create a Multicast Address and Queue
+
+We will create a multicast address named `news.topic` and bind a queue named `subscriberOneQueue` to it.
+
+1.  **Navigate to the `Addresses` tab:**
+    In the AMQ Management Console, on the left navigation pane, expand *Artemis* and click on *Addresses*.
+
+2.  **Add a New Address:**
+    Click the green "Create" button (or "Add Address").
+
+3.  **Configure the Multicast Address:**
+    *   **Name:** `news.topic`
+    *   **Routing Type:** Select `MULTICAST`.
+    *   Click "Create".
+
+4.  **Add a Queue to the Multicast Address:**
+    Now that the `news.topic` address exists, we need to bind a queue to it.
+    *   Navigate back to the *Queues* tab.
+    *   Click "Create" again.
+    *   **Address:** `news.topic` (Select it from the dropdown or type it).
+    *   **Name:** `subscriberOneQueue`
+    *   **Routing Type:** Select `MULTICAST` (Crucial to match the address's routing type).
+    *   **Durable:** Check this box.
+    *   Click "Create".
+
+5.  **Verify Creation:**
+    *   Go to the *Queues* tab. You should see `subscriberOneQueue` listed.
+    *   Go to the *Addresses* tab. Click on `news.topic`. You should see `subscriberOneQueue` listed under its "Queues" section. The address itself will show `MULTICAST` as its routing type.
+
+---
+
+**Summary:**
+
+You have successfully created both an anycast queue and a multicast address with a bound queue using the AMQ Management Console. This hands-on experience demonstrates how to dynamically configure message routing endpoints within your Red Hat AMQ broker. For production environments, remember to consider defining these configurations declaratively within your `ActiveMQArtemis` custom resource for better version control and automated deployments.
+```

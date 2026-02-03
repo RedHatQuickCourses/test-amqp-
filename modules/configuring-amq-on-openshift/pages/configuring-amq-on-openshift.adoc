@@ -6,4 +6,16 @@
 - **Setting up Queues and Exchanges**: Understand how to create and manage queues and exchanges, the fundamental messaging constructs in AMQ.
 - **Managing AMQ User Access**: Discover methods to control user access to AMQ, including role-based access control (RBAC) and user authentication.
 - **Encrypting Traffic with TLS**: Implement Transport Layer Security (TLS) to secure the communication between AMQ clients and brokers.
-- **Securing AMQ with External Identity Providers**: Integrate AMQ with external identity providers like LDAP or Kerberos for centralized user management and authentication.
+- **Securing AMQ with External Identity Providers**: Integrate AMQ with external identity providers like LDAP or Kerberos for centralized user management and authentication.#  Configuring AMQ on OpenShift
+
+=== Configuring AMQ on OpenShift
+
+Configuring Red Hat AMQ on OpenShift involves tailoring its message brokers and access controls to meet specific application requirements.
+
+Key aspects include:
+
+*   *Configuring AMQ Brokers*: Adjusting broker settings such as persistence, memory limits, and networking to optimize performance and reliability.
+*   *Setting up Queues and Exchanges*: Defining messaging destinations (queues for point-to-point, exchanges for publish-subscribe) that clients will use to send and receive messages.
+*   *Managing AMQ User Access*: Implementing authentication and authorization mechanisms to control which users and applications can connect to AMQ and what operations they can perform.
+*   *Encrypting Traffic with TLS*: Securing communication between clients and AMQ brokers using Transport Layer Security (TLS) to protect data in transit.
+*   *Securing AMQ with External Identity Providers*: Integrating AMQ with external identity management systems (e.g., Red Hat SSO, LDAP) for centralized user authentication and authorization.

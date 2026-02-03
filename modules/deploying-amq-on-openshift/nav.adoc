@@ -2,3 +2,7 @@
 ** xref:prerequisites-for-deployment.adoc[]
 ** xref:steps-to-deploy-amq-on-openshift.adoc[]
 ** xref:verification-of-successful-deployment.adoc[]
+* xref:deploying-amq-on-openshift.adoc[]
+** xref:prerequisites-for-deployment.adoc[]
+** xref:steps-to-deploy-amq-on-openshift.adoc[]
+** xref:verification-of-successful-deployment.adoc[]

@@ -65,4 +65,342 @@ To receive messages from an AMQ broker deployed on OpenShift, follow these steps
    if (message instanceof TextMessage) {
        TextMessage txtMessage = (TextMessage) message;
        System.out.println("Received message: " + txtMessage.getText());
-   }
+   }#  Sending and receiving messages
+
+= Sending and Receiving Messages
+
+This section delves into the practical aspects of exchanging messages with Red Hat AMQ deployed on OpenShift from external client applications. You will learn the fundamental concepts of message producers and consumers, understand the necessary connection details, and gain hands-on experience by building simple client applications to send and receive messages.
+
+== Understanding Message Exchange with AMQ
+
+Red Hat AMQ Broker, based on Apache ActiveMQ Artemis, supports a variety of messaging protocols, with AMQP 1.0 (Advanced Message Queuing Protocol) being its primary and most robust choice for interoperable enterprise messaging. Clients connect to the broker using these protocols to send messages to, and receive messages from, specific addresses (queues or topics).
+
+=== Messaging Protocols and Client Libraries
+
+While AMQ Broker supports multiple protocols (AMQP 1.0, OpenWire, STOMP, MQTT, HornetQ Core), AMQP 1.0 is generally recommended for new applications due to its standardization, flexibility, and performance.
+
+To interact with AMQ Broker, client applications utilize specific client libraries that implement these protocols. Popular choices include:
+
+*   **Java:** JMS (Java Message Service) API with an AMQP 1.0 or OpenWire client library (e.g., Qpid JMS).
+*   **Python:** `qpid-proton` or `rhea` for AMQP 1.0.
+*   **Node.js:** `rhea` for AMQP 1.0.
+*   **.NET:** `AMQPNetLite` for AMQP 1.0.
+
+=== Producer-Consumer Model
+
+The core of message-oriented middleware relies on the producer-consumer model:
+
+*   **Producers:** Applications that create and send messages to a specific address on the AMQ broker.
+*   **Consumers:** Applications that connect to the AMQ broker and subscribe to an address to receive messages.
+
+Messages are typically delivered to queues (for point-to-point messaging, where each message is consumed by only one consumer) or topics (for publish-subscribe messaging, where each message can be consumed by multiple subscribers).
+
+=== Connection Details
+
+For an external client to connect to an AMQ broker deployed on OpenShift, it needs the following information:
+
+1.  **Broker Address (Hostname/IP):** This is the external route or service IP that OpenShift exposes for the AMQ broker. You'll typically use the FQDN of an OpenShift Route.
+2.  **Port:** The port on which the broker listens for client connections.
+    *   `5672`: Standard AMQP 1.0 port (unencrypted).
+    *   `5671`: Standard AMQPS 1.0 port (encrypted with TLS).
+3.  **Credentials:** If the AMQ broker is secured, the client will need a valid username and password for authentication. These are often stored in OpenShift secrets and mounted into the AMQ broker pod.
+4.  **Address Name:** The name of the queue or topic to which messages will be sent or from which they will be received.
+
+[NOTE]
+====
+In a production environment, always use TLS (port 5671) to encrypt traffic between clients and the AMQ broker, especially when transmitting sensitive data.
+====
+
+== Hands-on Activity: Sending and Receiving Messages with Python
+
+In this lab, you will create two simple Python scripts: one to send messages (producer) and another to receive messages (consumer) from an AMQ Broker deployed on OpenShift.
+
+=== Prerequisites
+
+Before starting this lab, ensure you have:
+
+*   An OpenShift cluster with `oc` CLI configured.
+*   An AMQ Broker deployed on OpenShift and accessible via an OpenShift Route (as covered in previous sections). Make sure the route is exposed for AMQP 1.0 traffic (e.g., port 5672 or 5671).
+*   A client machine with Python 3 installed.
+*   The `qpid-proton` library installed on your client machine. You can install it using pip:
+    ```bash
+    pip install python-qpid-proton
+    ```
+
+=== Step 1: Identify AMQ Broker Connection Details
+
+First, you need to find the external hostname for your AMQ Broker's AMQP service.
+
+. Log in to your OpenShift cluster using the `oc` CLI.
+. Switch to the project where your AMQ Broker is deployed.
++
+```bash
+oc project <your-amq-project>
+```
++
+[EXAMPLE]
+.Example
+```bash
+oc project my-amq-broker-project
+```
+
+. Get the hostname of the AMQP route. Look for the route associated with your AMQ Broker's AMQP service (often ending with `-amqp`).
++
+```bash
+oc get route -o custom-columns=NAME:.metadata.name,HOSTNAME:.spec.host
+```
++
+[EXAMPLE]
+.Expected Output Snippet
+```
+NAME                      HOSTNAME
+my-amq-broker-amqp        my-amq-broker-amqp-my-amq-broker-project.apps.cluster.example.com
+```
++
+Record the `HOSTNAME`. This will be your `BROKER_HOST`.
+
+. Determine the username and password for your AMQ Broker. These are typically stored in an OpenShift secret.
++
+```bash
+oc get secret <broker-name>-users-credentials -o jsonpath='{.data.username}' | base64 --decode
+oc get secret <broker-name>-users-credentials -o jsonpath='{.data.name}' | base64 --decode
+oc get secret <broker-name>-users-credentials -o jsonpath='{.data.password}' | base64 --decode
+```
++
+[NOTE]
+====
+Replace `<broker-name>` with the actual name of your AMQ Broker instance (e.g., `my-amq-broker`). The username is often `admin` and the password is a randomly generated string.
+====
++
+Record the `USERNAME` and `PASSWORD`.
+
+. **Choose an Address:** For this lab, we'll use a simple queue named `my-test-queue`.
+
+=== Step 2: Create a Message Producer Script
+
+Create a new file named `producer.py` and add the following Python code. Replace the placeholder values with your actual broker details.
+
+```python
+# producer.py
+import sys
+from proton import Messenger
+from proton.handlers import MessagingHandler
+from proton.reactor import Container
+
+# --- Configuration ---
+# Replace with your AMQ Broker's AMQP Route hostname
+BROKER_HOST = "my-amq-broker-amqp-my-amq-broker-project.apps.cluster.example.com"
+BROKER_PORT = 5672  # Use 5671 for TLS/SSL
+BROKER_USERNAME = "admin" # Replace with your AMQ Broker username
+BROKER_PASSWORD = "your-generated-password" # Replace with your AMQ Broker password
+QUEUE_NAME = "my-test-queue"
+
+# Construct the AMQP connection URL
+# For TLS: f"amqps://{BROKER_USERNAME}:{BROKER_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}/{QUEUE_NAME}"
+CONNECTION_URL = f"amqp://{BROKER_USERNAME}:{BROKER_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}/{QUEUE_NAME}"
+
+class Sender(MessagingHandler):
+    def __init__(self, conn_url, messages_to_send):
+        super(Sender, self).__init__()
+        self.conn_url = conn_url
+        self.messages_to_send = messages_to_send
+        self.sent_count = 0
+
+    def on_start(self, event):
+        print(f"Connecting to: {self.conn_url}")
+        event.container.create_sender(self.conn_url)
+
+    def on_sendable(self, event):
+        if self.sent_count < self.messages_to_send:
+            message_body = f"Hello from OpenShift AMQ! Message number {self.sent_count + 1}"
+            message = event.message
+            message.body = message_body
+            event.sender.send(message)
+            print(f"Sent: '{message_body}'")
+            self.sent_count += 1
+        else:
+            event.sender.close()
+            event.connection.close()
+            print(f"All {self.messages_to_send} messages sent. Disconnecting.")
+
+    def on_transport_error(self, event):
+        print(f"Transport error: {event.transport.condition}")
+        event.connection.close()
+
+    def on_connection_error(self, event):
+        print(f"Connection error: {event.connection.remote_condition}")
+
+    def on_disconnected(self, event):
+        print("Disconnected from broker.")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python producer.py <number_of_messages>")
+        sys.exit(1)
+
+    num_messages = int(sys.argv[1])
+    try:
+        Container(Sender(CONNECTION_URL, num_messages)).run()
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        print(f"An error occurred: {e}")
+```
+
+[CAUTION]
+====
+Ensure your `CONNECTION_URL` correctly reflects whether you are using `amqp://` for unencrypted or `amqps://` for TLS-encrypted connections, along with the corresponding port (5672 or 5671). If you haven't configured TLS on your AMQ broker, stick to `amqp://` and port 5672 for this lab.
+====
+
+=== Step 3: Create a Message Consumer Script
+
+Create a new file named `consumer.py` and add the following Python code. Replace the placeholder values with your actual broker details.
+
+```python
+# consumer.py
+import sys
+from proton import Messenger
+from proton.handlers import MessagingHandler
+from proton.reactor import Container
+
+# --- Configuration ---
+# Replace with your AMQ Broker's AMQP Route hostname
+BROKER_HOST = "my-amq-broker-amqp-my-amq-broker-project.apps.cluster.example.com"
+BROKER_PORT = 5672  # Use 5671 for TLS/SSL
+BROKER_USERNAME = "admin" # Replace with your AMQ Broker username
+BROKER_PASSWORD = "your-generated-password" # Replace with your AMQ Broker password
+QUEUE_NAME = "my-test-queue"
+
+# Construct the AMQP connection URL
+# For TLS: f"amqps://{BROKER_USERNAME}:{BROKER_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}/{QUEUE_NAME}"
+CONNECTION_URL = f"amqp://{BROKER_USERNAME}:{BROKER_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}/{QUEUE_NAME}"
+
+class Receiver(MessagingHandler):
+    def __init__(self, conn_url, expected_messages):
+        super(Receiver, self).__init__()
+        self.conn_url = conn_url
+        self.expected_messages = expected_messages
+        self.received_count = 0
+
+    def on_start(self, event):
+        print(f"Connecting to: {self.conn_url}")
+        event.container.create_receiver(self.conn_url)
+
+    def on_message(self, event):
+        message_body = event.message.body
+        print(f"Received: '{message_body}'")
+        self.received_count += 1
+        if self.received_count >= self.expected_messages:
+            event.receiver.close()
+            event.connection.close()
+            print(f"All {self.expected_messages} messages received. Disconnecting.")
+
+    def on_transport_error(self, event):
+        print(f"Transport error: {event.transport.condition}")
+        event.connection.close()
+
+    def on_connection_error(self, event):
+        print(f"Connection error: {event.connection.remote_condition}")
+
+    def on_disconnected(self, event):
+        print("Disconnected from broker.")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python consumer.py <number_of_messages_to_expect>")
+        sys.exit(1)
+
+    num_messages_to_expect = int(sys.argv[1])
+    try:
+        Container(Receiver(CONNECTION_URL, num_messages_to_expect)).run()
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        print(f"An error occurred: {e}")
+```
+
+=== Step 4: Test Message Exchange
+
+Now, run the consumer script first, then the producer script.
+
+. Open a new terminal window or tab.
+. Navigate to the directory where you saved `consumer.py`.
+. Run the consumer, specifying how many messages it should expect. For example, to expect 5 messages:
++
+```bash
+python consumer.py 5
+```
++
+The consumer will start and wait for messages. You should see output similar to:
++
+```
+Connecting to: amqp://admin:your-generated-password@my-amq-broker-amqp-my-amq-broker-project.apps.cluster.example.com:5672/my-test-queue
+```
+
+. Open *another* new terminal window or tab.
+. Navigate to the directory where you saved `producer.py`.
+. Run the producer, specifying how many messages to send. This number should match or be less than the number the consumer is expecting. For example, to send 5 messages:
++
+```bash
+python producer.py 5
+```
++
+You should see output similar to:
++
+```
+Connecting to: amqp://admin:your-generated-password@my-amq-broker-amqp-my-amq-broker-project.apps.cluster.example.com:5672/my-test-queue
+Sent: 'Hello from OpenShift AMQ! Message number 1'
+Sent: 'Hello from OpenShift AMQ! Message number 2'
+Sent: 'Hello from OpenShift AMQ! Message number 3'
+Sent: 'Hello from OpenShift AMQ! Message number 4'
+Sent: 'Hello from OpenShift AMQ! Message number 5'
+All 5 messages sent. Disconnecting.
+Disconnected from broker.
+```
+
+. Switch back to the consumer terminal. You should see the messages being received:
++
+```
+Received: 'Hello from OpenShift AMQ! Message number 1'
+Received: 'Hello from OpenShift AMQ! Message number 2'
+Received: 'Hello from OpenShift AMQ! Message number 3'
+Received: 'Hello from OpenShift AMQ! Message number 4'
+Received: 'Hello from OpenShift AMQ! Message number 5'
+All 5 messages received. Disconnecting.
+Disconnected from broker.
+```
+
+Congratulations! You have successfully deployed an AMQ Broker on OpenShift and exchanged messages with it from external Python clients.
+
+== Monitoring and Troubleshooting Client Connections
+
+When connecting external clients to AMQ on OpenShift, common issues can arise. Here's how to monitor and troubleshoot them:
+
+=== Monitoring
+
+*   **AMQ Console:** Access the AMQ Broker's web console (via another OpenShift Route) to view active connections, queues, messages, and consumer/producer statistics. This is often the most insightful tool.
+*   **OpenShift Pod Logs:** Check the logs of your AMQ Broker pod for connection attempts, authentication failures, or error messages.
+    ```bash
+    oc logs <amq-broker-pod-name>
+    ```
+*   **Client Application Logs:** Ensure your client applications log connection attempts, successful sends/receives, and any errors encountered. The Python scripts above include basic logging.
+
+=== Troubleshooting
+
+*   **Connection Refused:**
+    *   Verify the `BROKER_HOST` and `BROKER_PORT` in your client scripts are correct and match the exposed OpenShift Route.
+    *   Ensure the AMQ Broker pod is running and healthy: `oc get pods -l app=<broker-name>`
+    *   Check OpenShift network policies if they are restricting external access.
+*   **Authentication Failure:**
+    *   Double-check the `BROKER_USERNAME` and `BROKER_PASSWORD` in your client scripts against the credentials stored in the OpenShift secret.
+    *   Ensure the user has permission to connect and send/receive messages on the specified address.
+*   **Messages Not Being Sent/Received:**
+    *   Verify the `QUEUE_NAME` in both producer and consumer scripts is identical.
+    *   Check the AMQ Console to see if messages are accumulating in the queue (producer working, consumer not) or if the queue remains empty (producer not working).
+    *   Ensure there are no typos in the address URL or logic errors in the client applications.
+*   **TLS/SSL Issues (`amqps://`):**
+    *   If using `amqps://`, ensure your AMQ Broker is configured for TLS/SSL and the route is correctly set up with a TLS certificate.
+    *   Clients might need to trust the broker's certificate. For self-signed certificates in development, you might need to configure the client to ignore certificate validation errors (not recommended for production).
+    *   The Python `qpid-proton` library might require additional configuration for TLS, such as specifying trust stores, which is beyond the scope of this basic lab but critical for production.
+
+By systematically checking these points, you can effectively diagnose and resolve most issues related to external client connectivity with Red Hat AMQ on OpenShift.
