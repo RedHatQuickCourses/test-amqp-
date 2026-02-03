@@ -1,0 +1,43 @@
+#  Prerequisites for deployment
+
+```
+== Prerequisites for Deployment
+
+Before deploying Red Hat AMQ on OpenShift, it is essential to ensure that the necessary prerequisites are met. This section outlines the key requirements for a successful deployment.
+
+=== OpenShift Cluster
+
+1. **OpenShift Cluster**: You need an existing OpenShift cluster. OpenShift is a container application platform based on Kubernetes, which automates the deployment, scaling, and management of applications. You can set up an OpenShift cluster using various methods, such as using a cloud provider's OpenShift service, installing OpenShift Origin, or using a developer-friendly OpenShift Online.
+
+   *Hands-on Activity*: Setting up an OpenShift cluster (detailed steps to follow in the Hands-on Lab section).
+
+2. **Cluster Administrator Access**: Ensure that you have the necessary permissions to create projects, deploy configurations, and manage resources in the OpenShift cluster.
+
+=== Red Hat AMQ Subscription
+
+2. **Red Hat AMQ Subscription**: Obtain a valid Red Hat AMQ subscription to access the required container images and necessary support.
+
+=== Network Connectivity
+
+3. **Network Connectivity**: Ensure that the OpenShift cluster has proper network connectivity, both internally and externally. This includes:
+
+   - **Internal Connectivity**: Ensure that all nodes in the OpenShift cluster can communicate with each other.
+   - **External Connectivity**: If you plan to access AMQ from external clients, ensure that the necessary firewall rules and network routes are in place to allow communication between the OpenShift cluster and external clients.
+
+=== Storage
+
+4. **Persistent Storage**: Red Hat AMQ requires persistent storage for message data. You can use various storage options supported by OpenShift, such as:
+
+   - Persistent Volumes (PV) and Persistent Volume Claims (PVC)
+   - Network File System (NFS)
+   - Cloud-based storage solutions (e.g., Amazon S3, Microsoft Azure Blob Storage, Google Cloud Storage)
+
+=== User Access
+
+5. **User Access**: Ensure that you have a user account with the necessary permissions to deploy and manage AMQ resources in the OpenShift cluster. This typically involves creating a service account and binding it to the required roles.
+
+=== Additional Considerations
+
+6. **Resource Allocation**: Plan and allocate sufficient resources (CPU, memory, and storage) for the AMQ brokers based on your expected workload.
+
+7. **Security**: Implement

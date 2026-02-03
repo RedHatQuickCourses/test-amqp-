@@ -1,0 +1,44 @@
+#  Managing AMQ user access
+
+= Managing AMQ User Access
+
+== Overview
+
+Managing user access is a critical aspect of ensuring the security and integrity of your Red Hat AMQ deployment on OpenShift. This section will guide you through the process of setting up user access, managing permissions, and securing your AMQ brokers with external Identity Providers.
+
+== Managing AMQ User Access
+
+AMQ provides several mechanisms to manage user access and control permissions. Here, we will discuss the following topics:
+
+- **Creating and managing AMQ users**
+- **Setting up roles and permissions**
+- **Securing AMQ with external Identity Providers**
+
+== Creating and Managing AMQ Users
+
+To manage user access, you first need to create users within AMQ. This can be done using the `amq-broker-console` or the `artemis` command-line interface (CLI).
+
+1. **Using amq-broker-console:**
+   - Access the console by navigating to the AMQ broker's web console in your browser (e.g., `https://<AMQ_BROKER_HOST>:8161/console`).
+   - Log in using the default credentials (username: `admin`, password: `admin`).
+   - Navigate to the "Users" tab and click "Create User".
+   - Enter the required details (username, password, and role) and click "Create".
+
+2. **Using artemis CLI:**
+   - Connect to the AMQ broker using the CLI: `artemis login -u <username> -p <password> -h <AMQ_BROKER_HOST>`.
+   - Create a new user with the following command: `create user --username <username> --password <password> --role=<role>`.
+
+== Setting up Roles and Permissions
+
+AMQ uses roles to define the level of access users have within the broker. The default roles are:
+
+- **Admin:** Full access to all broker features and resources.
+- **Guest:** Limited access, typically used for testing or demonstration purposes.
+
+You can create custom roles as well, tailored to your specific use case. To create a custom role, use the following command in the `artemis` CLI:
+
+`create role --name <role_name> --permissions <permissions>`.
+
+Permissions can be specified using one or more of the following:
+
+- `create

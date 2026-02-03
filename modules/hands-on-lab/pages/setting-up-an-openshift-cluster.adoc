@@ -1,0 +1,45 @@
+#  Setting up an OpenShift cluster
+
+= Setting up an OpenShift Cluster
+
+== Overview
+
+OpenShift is a container application platform based on Kubernetes. It simplifies the deployment, scaling, and management of applications using containers. To effectively utilize Red Hat AMQ on OpenShift, you first need to set up an OpenShift cluster. This section will guide you through the process of setting up an OpenShift cluster using the OpenShift Origin installation method.
+
+== Prerequisites
+
+Before setting up an OpenShift cluster, ensure you have the following prerequisites:
+
+1. **Hardware Requirements**: A minimum of three nodes (Master and Nodes) with at least 2 CPU cores and 2 GB RAM each.
+2. **Operating System**: Red Hat Enterprise Linux (RHEL) 7.x or CentOS 7.x for all nodes.
+3. **Network**: All nodes should have access to each other via private and public networks.
+4. **Container Runtime**: Docker 1.13 or later installed on all nodes.
+5. **User Access**: A user with sudo privileges on all nodes.
+
+== Steps to Set Up an OpenShift Cluster
+
+Follow these steps to set up an OpenShift cluster:
+
+1. **Install OpenShift on Master Node**
+
+   - Download the OpenShift Origin installation package from the [official website](https://www.openshift.com/products/origin/download/).
+   - Extract the package and run the `openshift-ansible-playbooks` directory.
+   - Configure the inventory file (`[OSEv3:children]`, `[masters]`, `[nodes]`, and `[extra_hosts]`) with the appropriate node details.
+   - Execute the playbook to install OpenShift on the master node:
+
+     ```
+     ansible-playbook -i <inventory_file> playbooks/prerequisites.yml
+     ansible-playbook -i <inventory_file> playbooks/deploy_cluster.yml
+     ```
+
+2. **Install OpenShift on Node Nodes**
+
+   - After the master node installation, install OpenShift on the node nodes using the same playbooks:
+
+     ```
+     ansible-playbook -i <inventory_file> playbooks/deploy_node.yml
+     ```
+
+3. **Access the OpenShift Web Console**
+
+   - Once the installation is complete, access the OpenShift web console using the master node's IP address and the default route (e.g., `https://<master_node_ip>:8443

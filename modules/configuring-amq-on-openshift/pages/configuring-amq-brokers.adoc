@@ -1,0 +1,59 @@
+#  Configuring AMQ brokers
+
+= Configuring AMQ Brokers
+
+== Overview
+
+Configuring AMQ brokers involves setting up and managing the broker instances deployed on OpenShift. This section covers the essential configurations required to ensure optimal performance and security of your message-oriented middleware (MOM) solution.
+
+== Configuring AMQ Brokers
+
+1. **Creating AMQ Broker Configuration Files**
+
+   To configure an AMQ broker, you need to create a `broker.xml` configuration file. This file contains various settings that control the broker's behavior, such as network connections, security, and storage.
+
+   ```
+   # Example broker.xml configuration
+   <broker xmlns="http://activemq.apache.org/schema/core">
+     <connectionFactories>
+       <connectionFactory name="my-connection-factory">
+         <connectionsAllowed>true</connectionsAllowed>
+         <maxConnections>100</maxConnections>
+         <reconnectionAttempts>-1</reconnectionAttempts>
+         <reconnectionAttemptInterval>5000</reconnectionAttemptInterval>
+         <retryInterval>3000</retryInterval>
+         <retryIntervalMultiplier>1.0</retryIntervalMultiplier>
+         <useExponentialBackOff>false</useExponentialBackOff>
+         <brokerConnectionURL>vm://localhost?brokerLetCertLogin=false</brokerConnectionURL>
+       </connectionFactory>
+     </connectionFactories>
+     <addresses>
+       <address name="my.queue">
+         <anycast>
+           <queue name="my.queue" durable="true"/>
+         </anycast>
+       </address>
+     </addresses>
+   </broker>
+   ```
+
+2. **Setting up Queues and Exchanges**
+
+   Queues and exchanges are essential components of an AMQ broker. Queues store messages, while exchanges determine how messages are routed to queues.
+
+   - **Creating Queues**
+
+     Use the `artemis queue` command to create queues. For example, to create a durable queue named `my.queue`, run:
+
+     ```
+     artemis queue create --name my.queue --durable true
+     ```
+
+   - **Creating Exchanges**
+
+     AMQ supports various exchange types, such as direct, fanout, and topic. To create an exchange, use the `artemis topic` command. For instance, to create a topic exchange named `my.topic`, execute:
+
+     ```
+     artemis topic create --name my.topic
+     ```
+

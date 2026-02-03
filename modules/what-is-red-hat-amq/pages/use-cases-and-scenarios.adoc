@@ -1,0 +1,17 @@
+#  Use cases and scenarios
+
+== Use Cases and Scenarios
+
+Red Hat AMQ is a flexible messaging platform that can be used in a variety of scenarios to address diverse enterprise needs. Here, we will explore some common use cases and scenarios where Red Hat AMQ proves to be an invaluable asset.
+
+- **Decoupling Applications**: One of the primary use cases for Red Hat AMQ is to decouple applications, allowing them to operate independently. This is particularly useful in microservices architectures, where services need to communicate without tight coupling. By using message brokers, applications can send and receive messages asynchronously, ensuring that changes in one service do not directly impact others.
+
+- **High-Volume Message Processing**: Red Hat AMQ is designed to handle high-volume message processing efficiently. It can be used in scenarios where large amounts of data need to be processed and distributed across multiple systems. For instance, in financial trading platforms, where real-time data processing is crucial, AMQ can ensure reliable and scalable message delivery.
+
+- **Event-Driven Architectures**: Red Hat AMQ supports event-driven architectures, where applications react to specific events. This use case is common in IoT (Internet of Things) scenarios, where devices generate a high volume of events that need to be processed and acted upon. AMQ can efficiently handle these events, ensuring that no message is lost and that the system remains responsive.
+
+- **Disaster Recovery and Business Continuity**: In disaster recovery and business continuity scenarios, Red Hat AMQ can ensure that messages are not lost during system failures or outages. By using features like message persistence and clustering, AMQ can guarantee that messages are stored safely and can be redelivered in case of a failure, ensuring business continuity.
+
+- **Hybrid Cloud and Multi-Cloud Deployments**: Red Hat AMQ can be deployed across hybrid and multi-cloud environments, enabling seamless communication between applications running on-premises and in the cloud. This use case is particularly relevant for enterprises undergoing digital transformation, aiming to leverage cloud services while maintaining control over their on-premises infrastructure.
+
+- **Secure and Compliant Messaging**: Red Hat AMQ provides robust security features, including encryption and authentication, making it suitable for use cases that require secure and compliant messaging. This is essential in industries with strict regulatory requirements, such as healthcare and finance, where sensitive data needs to be

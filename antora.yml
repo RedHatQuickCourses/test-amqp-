@@ -1,16 +1,20 @@
 name: test-amqp-
-title:  Address Settings for AMQ Broker on OpenShift
+title:  Course Outline: Red Hat AMQ on OpenShift
 version: 1.0.0
 nav:
 - modules/ROOT/nav.adoc
 - modules/LABENV/nav.adoc
 
-- modules/configuring-address-settings/nav.adoc
+- modules/understanding-the-need-for-message-oriented-middleware/nav.adoc
 
-- modules/address-settings-configuration/nav.adoc
+- modules/what-is-red-hat-amq/nav.adoc
 
-- modules/avoiding-default-configuration-inclusion/nav.adoc
+- modules/deploying-amq-on-openshift/nav.adoc
 
-- modules/overlapping-address-settings/nav.adoc
+- modules/configuring-amq-on-openshift/nav.adoc
+
+- modules/accessing-amq-deployed-on-openshift-through-external-clients/nav.adoc
+
+- modules/hands-on-lab/nav.adoc
 
 - modules/appendix/nav.adoc

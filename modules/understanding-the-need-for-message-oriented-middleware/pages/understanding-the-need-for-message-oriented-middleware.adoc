@@ -1,0 +1,11 @@
+#  Understanding the need for message oriented middleware
+
+**= Understanding the need for message oriented middleware**
+
+Message-oriented middleware (MOM) is a software infrastructure that enables applications to communicate with each other through the exchange of messages. Here are the key points:
+
+- **Importance of message-oriented middleware**: MOM facilitates asynchronous communication between distributed applications, improving system reliability and scalability. It ensures that messages are delivered, even if the receiving application is temporarily unavailable.
+
+- **Benefits of using MOM in enterprise systems**: MOM provides features like message queuing, routing, and transformation, which simplify complex communication scenarios. It also offers load balancing, message persistence, and transaction support, enhancing the robustness of enterprise applications.
+
+- **Comparison with other communication models**: Unlike tightly coupled models (e.g., RPC), MOM enables loose coupling between applications, reducing dependencies and increasing flexibility. Compared to shared databases or files, MOM offers a more efficient and reliable method for exchanging data between applications.

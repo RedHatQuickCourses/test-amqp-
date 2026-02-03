@@ -1,0 +1,29 @@
+#  Monitoring and troubleshooting client connections
+
+== Monitoring and troubleshooting client connections
+
+Monitoring and troubleshooting client connections is a crucial aspect of ensuring the smooth operation of your Red Hat AMQ deployment on OpenShift. This section will guide you through the process of identifying and resolving common issues that may arise when external clients connect to your AMQ brokers.
+
+### 1. Monitoring Client Connections
+
+To effectively monitor client connections, you can utilize various tools and techniques:
+
+- **AMQ Console**: The AMQ Console provides a web-based user interface for managing and monitoring AMQ brokers. You can view the list of connected clients, their connection details, and message flow statistics. To access the AMQ Console, navigate to the AMQ broker's route in your OpenShift cluster.
+
+- **Prometheus and Grafana**: Prometheus is a powerful monitoring and alerting toolkit, while Grafana is a visualization tool. By integrating Prometheus with AMQ, you can collect metrics and visualize them using Grafana dashboards. This setup allows you to monitor key performance indicators (KPIs) such as message rates, connection counts, and memory usage.
+
+- **JMX Monitoring**: AMQ brokers expose JMX metrics that can be monitored using tools like JConsole or custom scripts. This method is useful for gathering detailed, low-level metrics about broker performance and resource usage.
+
+### 2. Troubleshooting Client Connections
+
+When issues arise with client connections, follow these steps to identify and resolve the problem:
+
+- **Verify Client Configuration**: Ensure that the client is correctly configured with the appropriate connection details (host, port, username, password, etc.). Double-check the connection URL and any security settings.
+
+- **Check Broker Logs**: Examine the AMQ broker logs for any error messages or warnings related to the client connection. The logs can be found in the broker's data directory or accessed through the AMQ Console.
+
+- **Inspect Network Connectivity**: Confirm that there are no network issues preventing the client from connecting to the broker. Use tools like `ping`, `traceroute`, or `telnet` to test connectivity between the client and broker.
+
+- **Review Broker Metrics**: Analyze the broker's metrics using Prometheus, Grafana, or JMX to identify any resource bottlenecks or performance issues that may be affecting client connections.
+
+- **Test with a Different Client**: If possible, test the connection using a

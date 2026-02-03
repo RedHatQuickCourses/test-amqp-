@@ -1,0 +1,4 @@
+* xref:understanding-the-need-for-message-oriented-middleware.adoc[]
+** xref:importance-of-message-oriented-middleware.adoc[]
+** xref:benefits-of-using-mom-in-enterprise-systems.adoc[]
+** xref:comparison-with-other-communication-models.adoc[]

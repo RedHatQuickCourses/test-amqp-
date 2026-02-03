@@ -1,0 +1,34 @@
+#  Setting up queues and exchanges
+
+= Setting up queues and exchanges
+
+Queues and exchanges are fundamental components of Red Hat AMQ, enabling reliable and flexible message routing within an enterprise system. This section will guide you through the process of configuring queues and exchanges on your deployed AMQ instance on OpenShift.
+
+== Understanding Queues and Exchanges
+
+Before diving into the configuration, let's briefly review the roles of queues and exchanges in a message-oriented middleware (MOM) system like Red Hat AMQ:
+
+- **Queues**: Queues are message repositories where messages are stored until they are consumed by a client. They ensure that messages are not lost and can be processed at the consumer's pace.
+
+- **Exchanges**: Exchanges act as message routers, directing messages to the appropriate queues based on rules called bindings. There are several types of exchanges in AMQ, including:
+  - *Direct*: Messages are routed to queues based on an exact match between the routing key in the message and the queue's binding key.
+  - *Fanout*: Messages are broadcast to all queues bound to the exchange, ensuring that every consumer receives a copy of the message.
+  - *Topic*: Messages are routed to queues based on a pattern match between the routing key in the message and the binding key. This allows for more complex routing scenarios.
+
+== Configuring Queues and Exchanges
+
+To configure queues and exchanges on your AMQ deployment on OpenShift, follow these steps:
+
+1. **Access the AMQ Console**: After deploying and configuring AMQ on OpenShift, access the AMQ Console by navigating to the AMQ broker's web-based management interface (e.g., http://<amq-broker-host>:8161/console).
+
+2. **Create a Queue**:
+   - In the AMQ Console, navigate to the *Queues* tab.
+   - Click *Create Queue*.
+   - Enter a *Queue name* and (optionally) a *Description*.
+   - Choose the desired *Durability* (non-durable or durable) and *Exclusive* (only this connection can access the queue) settings.
+   - Click *Create*.
+
+3. **Create an Exchange**:
+   - In the AMQ Console, navigate to the *Exchanges* tab.
+   - Click *Create Exchange*.
+   - Select the desired *Exchange type* (Direct, Fanout, or

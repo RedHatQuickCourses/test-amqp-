@@ -1,0 +1,37 @@
+#  Accessing AMQ from external clients
+
+== Accessing AMQ Deployed on OpenShift through External Clients
+
+In this section, we will explore how to connect external clients to the deployed Red Hat AMQ instance on OpenShift, send and receive messages, and monitor and troubleshoot client connections.
+
+### Connecting External Clients to AMQ
+
+To connect external clients to AMQ deployed on OpenShift, you need to use a messaging protocol supported by AMQ, such as AMQP, MQTT, STOMP, OpenMAUD, or Core Protocol. Here, we'll focus on AMQP using the Qpid Dispatch Client as an example.
+
+1. **Install Qpid Dispatch Client**: Download and install the Qpid Dispatch Client on your external machine. You can find the installation instructions on the [Qpid Dispatch Client documentation](https://qpid.apache.org/releases/qpid-dispatch-1.12.0/man/qpid-dispatch-tools-config-quick.html).
+
+2. **Create a Connection**: Use the `qpid-dispatch-conf` tool to create a connection configuration file. This file will contain the necessary connection details, such as the host (OpenShift route), port, and virtual host.
+
+   ```
+   qpid-dispatch-conf --create --type queueremote --host <AMQ_OPENSHIFT_ROUTE> --port <AMQ_OPENSHIFT_PORT> --virtual-host <AMQ_OPENSHIFT_VHOST> > amq-client-config.xml
+   ```
+
+   Replace `<AMQ_OPENSHIFT_ROUTE>`, `<AMQ_OPENSHIFT_PORT>`, and `<AMQ_OPENSHIFT_VHOST>` with the appropriate values for your AMQ deployment on OpenShift.
+
+3. **Start the Client**: Use the `qdsub` command to start the client and connect to the AMQ broker.
+
+   ```
+   qdsub -c amq-client-config.xml
+   ```
+
+### Sending and Receiving Messages
+
+Once connected, you can send and receive messages using the Qpid Dispatch Client.
+
+1. **Send a Message**: Use the `qdsend` command to send a message to an AMQ queue.
+
+   ```
+   qdsend -c amq-client-config.xml -r <QUEUE_NAME> -b <MESSAGE_BODY>
+   ```
+
+   Replace `<QUEUE_NAME>` with the name of the queue you want to send the message to, and `<MESSAGE

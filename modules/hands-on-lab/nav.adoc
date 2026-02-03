@@ -1,0 +1,4 @@
+* xref:hands-on-lab.adoc[]
+** xref:setting-up-an-openshift-cluster.adoc[]
+** xref:deploying-and-configuring-amq-on-openshift.adoc[]
+** xref:accessing-amq-from-external-clients.adoc[]

@@ -1,0 +1,4 @@
+* xref:accessing-amq-deployed-on-openshift-through-external-clients.adoc[]
+** xref:connecting-external-clients-to-amq.adoc[]
+** xref:sending-and-receiving-messages.adoc[]
+** xref:monitoring-and-troubleshooting-client-connections.adoc[]

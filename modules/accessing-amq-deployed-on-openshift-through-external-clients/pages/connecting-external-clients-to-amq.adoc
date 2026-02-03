@@ -1,0 +1,67 @@
+#  Connecting external clients to AMQ
+
+== Accessing AMQ deployed on OpenShift through external clients
+
+    Once Red Hat AMQ is successfully deployed and configured on OpenShift, external clients can be connected to it to send and receive messages. This section will guide you through the process of connecting external clients to AMQ and managing their interactions.
+
+    ### Connecting External Clients to AMQ
+
+    To connect external clients to AMQ deployed on OpenShift, you need to use a messaging protocol supported by AMQ, such as AMQP, MQTT, OpenMAUD, or STOMP. Here, we'll focus on AMQP using the Qpid Dispatch Router as an intermediary.
+
+    **Prerequisites:**
+
+    1. An external client with a messaging library that supports AMQP (e.g., Python's `amqp` library, Java's `qpid-jmx` library, or Node.js's `amqplib`).
+    2. The OpenShift cluster should have network access to the AMQ brokers.
+
+    **Steps to Connect External Clients:**
+
+    1. **Install the Qpid Dispatch Router:**
+
+        Deploy the Qpid Dispatch Router on a machine that has network access to both the OpenShift cluster and the external clients. You can use the following command to deploy the router on a Linux machine:
+
+        ```
+        sudo yum install -y qpid-dispatch-router
+        ```
+
+    2. **Configure the Qpid Dispatch Router:**
+
+        Create a router configuration file (`router.conf`) with the necessary inter-broker and client connections. Here's a basic example:
+
+        ```
+        connector {
+            host: <AMQ_BROKER_HOST>
+            port: <AMQ_BROKER_PORT>
+            role: normal
+        }
+
+        connector {
+            host: <EXTERNAL_CLIENT_HOST>
+            port: <EXTERNAL_CLIENT_PORT>
+            role: normal
+        }
+
+        listener {
+            host: 0.0.0.0
+            port: 5672
+            role: inter_router
+        }
+
+        address {
+            prefix: amq
+            policy: catch_and_store
+        }
+        ```
+
+        Replace `<AMQ_BROKER_HOST>`, `<AMQ_BROKER_PORT>`, `<EXTERNAL_CLIENT_HOST>`, and `<EXTERNAL_CLIENT_PORT>` with the appropriate values.
+
+    3. **Start the Qpid Dispatch Router:**
+
+        Start the router using the following command:
+
+        ```
+        sudo systemctl start qpid-dispatch-router
+        ```
+
+    4. **Connect External Clients:**
+
+        Use

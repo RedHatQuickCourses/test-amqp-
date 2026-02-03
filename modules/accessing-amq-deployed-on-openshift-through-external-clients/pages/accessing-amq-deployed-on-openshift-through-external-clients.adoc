@@ -1,0 +1,9 @@
+#  Accessing AMQ deployed on OpenShift through external clients
+
+**Accessing AMQ Deployed on OpenShift through External Clients**
+
+* Connecting external clients to AMQ: Learn how to establish a connection between external clients and the AMQ broker deployed on OpenShift. This includes understanding the necessary protocols (like AMQP, MQTT, or STOMP) and configuring the client connections.
+
+* Sending and receiving messages: Understand the process of sending messages from external clients to AMQ brokers and receiving messages from the brokers. This includes using appropriate message formats and handling message acknowledgments.
+
+* Monitoring and troubleshooting client connections: Get insights into monitoring the health and performance of client connections, as well as troubleshooting common issues that may arise when external clients interact with the AMQ broker on OpenShift. This may involve using tools like AMQ Console or command-line utilities for monitoring and logging.

@@ -1,0 +1,9 @@
+#  Configuring AMQ on OpenShift
+
+**Configuring AMQ on OpenShift**
+
+- **Configuring AMQ Brokers**: Learn to set up and configure AMQ brokers on OpenShift, including understanding broker topology and clustering.
+- **Setting up Queues and Exchanges**: Understand how to create and manage queues and exchanges, the fundamental messaging constructs in AMQ.
+- **Managing AMQ User Access**: Discover methods to control user access to AMQ, including role-based access control (RBAC) and user authentication.
+- **Encrypting Traffic with TLS**: Implement Transport Layer Security (TLS) to secure the communication between AMQ clients and brokers.
+- **Securing AMQ with External Identity Providers**: Integrate AMQ with external identity providers like LDAP or Kerberos for centralized user management and authentication.

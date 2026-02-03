@@ -1,0 +1,13 @@
+#  Hands-on Lab
+
+**Hands-on Lab**
+
+This lab provides a practical, hands-on experience to apply the theoretical knowledge gained from the previous sections. It involves:
+
+- **Setting up an OpenShift cluster**: Learn to create and configure a local OpenShift cluster for deploying and managing applications, including Red Hat AMQ.
+
+- **Deploying and configuring AMQ on OpenShift**: Implement the steps to deploy AMQ on the OpenShift cluster, including verification of successful deployment. This also covers configuring AMQ brokers, setting up queues and exchanges, managing user access, encrypting traffic with TLS, and securing AMQ with external Identity Providers.
+
+- **Accessing AMQ from external clients**: Gain experience in connecting external clients to the deployed AMQ instance on OpenShift. This includes sending and receiving messages, and monitoring and troubleshooting client connections.
+
+This lab is designed to reinforce the concepts learned in the previous sections and provide practical experience in deploying, configuring, and accessing Red Hat AMQ on OpenShift.

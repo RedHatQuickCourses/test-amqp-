@@ -1,0 +1,28 @@
+#  What is Red Hat AMQ
+
+**What is Red Hat AMQ**
+
+Red Hat AMQ is a robust, flexible, and high-performance messaging platform based on the Apache ActiveMQ Artemis project. It is designed to simplify the development and management of enterprise messaging applications.
+
+- **Key Features and Components**:
+  - **Message-Oriented Middleware (MOM)**: AMQ provides a message broker that enables asynchronous communication between applications, decoupling the sender and receiver.
+  - **Multiple Messaging Protocols**: AMQ supports various messaging protocols such as AMQP, MQTT, STOMP, OpenWire, and REST over HTTP.
+  - **Clustering and High Availability**: AMQ brokers can be clustered for scalability and high availability, ensuring messages are not lost in case of broker failures.
+  - **Persistent Messaging**: AMQ supports persistent messaging, allowing messages to survive broker restarts and ensuring message delivery.
+  - **Advanced Queuing**: AMQ provides features like point-to-point and publish-subscribe messaging, message grouping, and exponential backoff in case of queue full situations.
+
+- **Use Cases and Scenarios**:
+  - **Decoupling Applications**: AMQ enables applications to communicate without tight coupling, improving system resilience and maintainability.
+  - **Distributed Systems**: AMQ is ideal for distributed systems where components need to exchange data reliably.
+  - **Microservices Communication**: AMQ facilitates communication between microservices, enabling asynchronous and reliable message exchange.
+  - **Event-Driven Architectures**: AMQ supports event-driven architectures, allowing applications to react to events published as messages.
+
+- **Integration with OpenShift**:
+  - **Deployment**: Red Hat AMQ can be deployed on OpenShift, a container orchestration platform, for easy management and scalability.
+  - **Configuration**: Once deployed, AMQ brokers can be configured on OpenShift, including setting up queues, exchanges, and managing user access.
+  - **Security**: AMQ on OpenShift can be secured using TLS for encrypting traffic and integrating with external Identity Providers for authentication and authorization.
+
+- **Accessing AMQ from External Clients**:
+  - **Connecting Clients**: External clients can connect to AMQ deployed on OpenShift using supported messaging protocols.
+  - **Sending and Receiving Messages**: Clients can send and receive messages, leveraging AMQ's reliable messaging capabilities.
+  - **Monitoring and Troubleshooting**: Tools and techniques for monitoring client connections and troubleshooting

@@ -1,0 +1,67 @@
+#  Steps to deploy AMQ on OpenShift
+
+== Deploying AMQ on OpenShift
+
+Deploying Red Hat AMQ on OpenShift involves several steps to ensure a successful installation and configuration. This section will guide you through the process, providing detailed instructions and considerations for each step.
+
+### Prerequisites for Deployment
+
+Before deploying AMQ on OpenShift, ensure you have the following prerequisites in place:
+
+1. **OpenShift Cluster**: A running OpenShift cluster (either self-managed or OpenShift Online/Dedicated).
+2. **oc CLI**: The OpenShift Command Line Interface (oc) installed and configured to interact with your OpenShift cluster.
+3. **Red Hat AMQ Operator**: The Red Hat AMQ Operator available in your OpenShift cluster's catalog.
+4. **Project**: An OpenShift project (namespace) where you will deploy AMQ resources.
+
+### Steps to Deploy AMQ on OpenShift
+
+1. **Create a Project**: Create a new project (namespace) for AMQ resources using the following command:
+
+   ```
+   oc new-project amq-project
+   ```
+
+2. **Add Red Hat AMQ Operator**: Add the Red Hat AMQ Operator to your OpenShift cluster by creating the necessary Operator Group and Subscription resources. Use the following YAML manifests as a reference:
+
+   - Operator Group: `amq-operator-group.yaml`
+
+     ```yaml
+     apiVersion: operators.coreos.com/v1
+     kind: OperatorGroup
+     metadata:
+       name: amq-operator-group
+       namespace: amq-project
+     spec:
+       targetNamespaces:
+         - amq-project
+     ```
+
+   - Subscription: `amq-subscription.yaml`
+
+     ```yaml
+     apiVersion: operators.coreos.com/v1alpha1
+     kind: Subscription
+     metadata:
+       name: amq-subscription
+       namespace: amq-project
+     spec:
+       name: amq-operator
+       channel: stable
+       installPlanApproval: Automatic
+       source: redhat-operators
+       sourceNamespace: openshift-marketplace
+     ```
+
+   Apply the manifests using the `oc apply -f` command:
+
+   ```
+   oc apply -f amq-operator-group.yaml
+   oc apply -f amq-subscription.yaml
+   ```
+
+3. **Create AMQ Broker**: Create an AMQ Broker instance using the following YAML manifest:
+
+   - Broker: `amq-broker.yaml`
+
+     ```yaml
+     apiVersion: broker.amq.io/v

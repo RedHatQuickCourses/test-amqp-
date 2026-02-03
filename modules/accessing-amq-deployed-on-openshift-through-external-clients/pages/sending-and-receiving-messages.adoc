@@ -1,0 +1,68 @@
+#  Sending and receiving messages
+
+== Sending and Receiving Messages
+
+In this section, we will explore how to send and receive messages using Red Hat AMQ deployed on OpenShift. This process is fundamental to understanding the practical application of AMQ in enterprise systems.
+
+### Sending Messages
+
+To send messages to an AMQ broker deployed on OpenShift, you can use various client libraries compatible with AMQ. Here, we'll use the Qpid Java client library as an example.
+
+1. **Add the Qpid Java client library to your project**: Include the Qpid Java client library in your project's dependencies. For Maven, add the following to your `pom.xml`:
+
+   ```xml
+   <dependency>
+       <groupId>org.apache.qpid</groupId>
+       <artifactId>qpid-jms-client</artifactId>
+       <version>0.49.0</version>
+   </dependency>
+   ```
+
+2. **Create a connection to the AMQ broker**: Establish a connection to the AMQ broker using the OpenShift service name and port.
+
+   ```java
+   Connection connection = factory.createConnection("amqp://<OPENSHIFT_USERNAME>:<OPENSHIFT_PASSWORD>@<OPENSHIFT_SERVICE_NAME>:<AMQ_PORT>");
+   ```
+
+3. **Start the connection**: Open the connection.
+
+   ```java
+   connection.start();
+   ```
+
+4. **Create a sender**: Create a sender for the connection.
+
+   ```java
+   Sender sender = connection.createSender("<QUEUE_NAME>");
+   ```
+
+5. **Send a message**: Send a message to the queue.
+
+   ```java
+   TextMessage message = session.createTextMessage("Hello, AMQ!");
+   sender.send(message);
+   ```
+
+### Receiving Messages
+
+To receive messages from an AMQ broker deployed on OpenShift, follow these steps using the Qpid Java client library:
+
+1. **Create a receiver**: Create a receiver for the connection.
+
+   ```java
+   MessageConsumer consumer = session.createConsumer("<QUEUE_NAME>");
+   ```
+
+2. **Receive a message**: Receive a message from the queue.
+
+   ```java
+   Message message = consumer.receive();
+   ```
+
+3. **Process the message**: Process the received message.
+
+   ```java
+   if (message instanceof TextMessage) {
+       TextMessage txtMessage = (TextMessage) message;
+       System.out.println("Received message: " + txtMessage.getText());
+   }

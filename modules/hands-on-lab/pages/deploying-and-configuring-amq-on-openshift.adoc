@@ -1,0 +1,55 @@
+#  Deploying and configuring AMQ on OpenShift
+
+= Deploying and Configuring AMQ on OpenShift
+
+== Prerequisites for Deployment
+
+Before deploying Red Hat AMQ on OpenShift, ensure the following prerequisites are met:
+
+1. **OpenShift Cluster**: A running OpenShift cluster (version 4.x or later) with appropriate storage and network configurations.
+2. **Red Hat Registry Access**: Access to the Red Hat Container Registry to pull the AMQ broker image.
+3. **oc CLI**: The OpenShift Command Line Interface (oc) installed and configured to interact with the OpenShift cluster.
+4. **User Permissions**: The necessary permissions to create projects, deploy applications, and manage services in the OpenShift cluster.
+
+== Steps to Deploy AMQ on OpenShift
+
+Follow these steps to deploy Red Hat AMQ on OpenShift:
+
+1. **Create a New Project**:
+   Use the following command to create a new project for AMQ:
+   ```
+   oc new-project amq-broker
+   ```
+
+2. **Deploy AMQ Broker**:
+   Deploy the AMQ broker using the provided OpenShift template:
+   ```
+   oc process -f https://raw.githubusercontent.com/redhat-amq/qpid-dispatch-openshift/master/amq-broker-template.yaml | oc create -f -
+   ```
+   This command deploys an AMQ broker with a single broker instance and a default durable queue.
+
+3. **Expose the AMQ Broker**:
+   To enable external clients to connect to the broker, expose it as a route:
+   ```
+   oc expose svc/amq-broker
+   ```
+   Note the generated URL, which will be used to access the broker from external clients.
+
+4. **Verify Deployment**:
+   Verify that the AMQ broker pods are running and the route is available:
+   ```
+   oc get pods
+   oc get routes
+   ```
+
+== Configuring AMQ on OpenShift
+
+After deploying AMQ on OpenShift, you can configure it according to your requirements:
+
+1. **Configure AMQ Brokers**:
+   Customize the broker configuration by updating the `broker.xml` file, which is mounted as a ConfigMap in the AMQ broker pod.
+
+2. **Set Up Queues and Exchanges**:
+   Create queues and exchanges using the AMQ Management Console or the `qdmanage` tool. For example, to create a queue named "example-queue":
+   ```
+   qd

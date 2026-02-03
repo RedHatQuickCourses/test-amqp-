@@ -1,0 +1,33 @@
+#  Comparison with other communication models
+
+== Comparison with other communication models
+
+In the realm of enterprise systems, various communication models exist, each with its unique characteristics and use cases. Understanding these models is crucial to appreciate the importance and benefits of message-oriented middleware (MOM) like Red Hat AMQ. This section will compare MOM with other common communication models, namely Remote Procedure Call (RPC) and publish-subscribe (pub-sub).
+
+**Remote Procedure Call (RPC)**
+
+RPC is a protocol that enables a program to cause a procedure (subroutine) to execute in another address space (commonly on another computer on a shared network) without the programmer explicitly coding the details for the remote interaction. In simpler terms, an RPC is a technique that allows a program to call a function or procedure located in another computer on the network as if it were a local procedure.
+
+*Advantages of RPC:*
+
+1. Simplicity: RPC provides a simple programming model, making it easier for developers to implement distributed applications.
+2. Efficiency: RPC minimizes network traffic by sending all relevant data in a single message.
+
+*Disadvantages of RPC:*
+
+1. Tight coupling: RPC requires a high degree of coupling between the client and server, making it less flexible and harder to maintain.
+2. Limited scalability: RPC is not well-suited for scenarios where the client and server are not known at design time, or when there is a need for asynchronous communication.
+
+**Publish-Subscribe (Pub-Sub)**
+
+Pub-Sub is a messaging pattern where senders (publishers) categorize messages into channels and other entities (subscribers) subscribe to the channels of interest. When a publisher sends a message to a channel, all subscribers receive a copy of the message.
+
+*Advantages of Pub-Sub:*
+
+1. Loose coupling: Pub-Sub allows for loose coupling between publishers and subscribers, making it easier to maintain and scale distributed systems.
+2. Asynchronous communication: Pub-Sub supports asynchronous communication, enabling better decoupling between components and improving overall system resilience.
+
+*Disadvantages of Pub-Sub:*
+
+1. Complexity: Pub-Sub can introduce additional complexity in managing channels, subscriptions, and message routing.
+2. Potential for message overload: If not properly managed, subscribers might receive an overwhelming number of messages, leading to performance issues.

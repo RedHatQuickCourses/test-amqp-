@@ -1,0 +1,53 @@
+#  Verification of successful deployment
+
+== Verification of Successful Deployment
+
+After deploying Red Hat AMQ on OpenShift, it's crucial to verify that the deployment was successful. This section will guide you through the steps to confirm that your AMQ brokers are running correctly and are accessible.
+
+### Prerequisites
+
+Before verifying the deployment, ensure that:
+
+1. You have access to the OpenShift cluster where AMQ was deployed.
+2. The necessary OpenShift CLI (oc) and AMQ CLI (amq-cli) tools are installed and configured on your local machine.
+
+### Steps to Verify Deployment
+
+1. **Check Broker Pod Status**
+
+   Use the following command to list all pods in the AMQ namespace:
+
+   ```bash
+   oc get pods -n <AMQ_NAMESPACE>
+   ```
+
+   Replace `<AMQ_NAMESPACE>` with the namespace where you deployed AMQ. Look for the broker pods; their status should be 'Running'.
+
+   ```
+   NAME                       READY   STATUS    RESTARTS   AGE
+   amq-broker-0               1/1     Running   0          10m
+   amq-broker-1               1/1     Running   0          10m
+   amq-broker-2               1/1     Running   0          10m
+   ```
+
+2. **Expose AMQ Broker as a Service**
+
+   To access the broker from outside the cluster, expose it as a route:
+
+   ```bash
+   oc expose svc <AMQ_BROKER_SERVICE> --type=Route -n <AMQ_NAMESPACE>
+   ```
+
+   Replace `<AMQ_BROKER_SERVICE>` with the name of your AMQ broker service. This command will create a route that you can use to access the broker.
+
+3. **Access the AMQ Console**
+
+   Once the route is created, you can access the AMQ console using the generated host name. The AMQ console provides a web-based interface to manage and monitor your brokers.
+
+4. **Send and Receive Messages**
+
+   To further verify the deployment, send and receive messages using the AMQ JMS client or any other client of your choice. Here's an example using the AMQ JMS client in Java:
+
+   ```java
+   ConnectionFactory factory = new ConnectionFactory("tcp://<AMQ_BROKER_ROUTE_HOSTNAME>:8880");
+   Connection connection = factory.createConnection

@@ -1,0 +1,50 @@
+#  Encrypting traffic with TLS
+
+= Encrypting traffic with TLS
+
+TLS (Transport Layer Security) is a cryptographic protocol designed to provide secure communication over the internet. In the context of Red Hat AMQ on OpenShift, TLS is used to encrypt the traffic between AMQ brokers and clients, ensuring data integrity and confidentiality.
+
+## Why use TLS with AMQ on OpenShift?
+
+1. **Data Confidentiality**: TLS encrypts the data in transit, preventing unauthorized access to sensitive information.
+2. **Data Integrity**: TLS ensures that the data cannot be modified during transmission without detection.
+3. **Authentication**: TLS provides a mechanism for authenticating the broker and clients, ensuring that only authorized entities can communicate.
+
+## Configuring TLS for AMQ on OpenShift
+
+### Prerequisites
+
+Before configuring TLS for AMQ on OpenShift, ensure the following:
+
+1. A running OpenShift cluster.
+2. Red Hat AMQ deployed and accessible on the OpenShift cluster.
+3. A keystore and truststore containing the necessary certificates and keys.
+
+### Steps to Configure TLS
+
+1. **Create a Secret**: Create a Kubernetes Secret containing the keystore and truststore files. This can be done using the `oc create secret` command.
+
+   ```
+   oc create secret generic amq-tls-secret --from-file=keystore.jks --from-file=truststore.jks
+   ```
+
+2. **Configure AMQ Broker**: Update the AMQ broker's configuration to use the TLS secret. This can be done by modifying the AMQ broker's `application.properties` file or using the OpenShift ConfigMap.
+
+   Add the following lines to enable TLS:
+
+   ```
+   amq.broker.tls=true
+   amq.broker.tls.secret=amq-tls-secret
+   ```
+
+3. **Restart the Broker**: Restart the AMQ broker for the changes to take effect.
+
+4. **Verify TLS Configuration**: Verify that TLS is enabled by checking the broker logs or using a messaging client that supports TLS.
+
+## Hands-on Activity: Configuring TLS for AMQ on OpenShift
+
+1. **Create a Keystore and Truststore**: Generate a keystore and truststore using a tool like OpenSSL or Keytool.
+
+2. **Create a Secret**: Create a Kubernetes Secret using the keystore and truststore files.
+
+3. **Update AMQ Broker Configuration**:

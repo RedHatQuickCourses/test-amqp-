@@ -1,5 +1,5 @@
 site:
-  title:  Address Settings for AMQ Broker on OpenShift
+  title:  Course Outline: Red Hat AMQ on OpenShift
   start_page: test-amqp-::index.adoc
 
 content:

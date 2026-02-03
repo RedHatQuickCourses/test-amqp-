@@ -1,0 +1,16 @@
+#  Deploying AMQ on OpenShift
+
+**Deploying AMQ on OpenShift**
+
+- **Prerequisites for Deployment**: Ensure that you have a compatible version of OpenShift installed and configured. You'll also need the Red Hat AMQ image from the OpenShift registry.
+
+- **Steps to Deploy AMQ on OpenShift**:
+  - Create a new project or use an existing one in your OpenShift cluster.
+  - Deploy the Red Hat AMQ image using an OpenShift DeploymentConfig or Operator.
+  - Configure the necessary resources, such as Persistent Volume Claims for data storage.
+  - Expose the AMQ service using a Route or LoadBalancer.
+
+- **Verification of Successful Deployment**:
+  - Check the status of the DeploymentConfig or Operator to ensure that the AMQ brokers are running.
+  - Verify that the AMQ service is accessible via the exposed Route or LoadBalancer.
+  - Test the connection to the AMQ brokers using the AMQ client or a command-line tool like 'amqp-connection'.

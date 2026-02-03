@@ -1,0 +1,34 @@
+#  Securing AMQ with external Identity Providers
+
+== Securing AMQ with External Identity Providers
+
+Red Hat AMQ can be secured using external Identity Providers (IdP) to manage user access and authentication. This approach enhances security by leveraging existing identity management systems, such as Red Hat Single Sign-On (RH-SSO), Microsoft Active Directory, or LDAP.
+
+### Key Concepts
+
+1. **Identity Providers (IdP):** External systems that manage user identities and authentication.
+2. **Red Hat AMQ Authentication:** The process of verifying user identities before granting access to AMQ resources.
+3. **Authorization:** The process of granting or denying access to specific AMQ resources based on user roles and permissions.
+
+### Benefits of Using External Identity Providers
+
+- **Centralized Identity Management:** Leverage existing identity management systems to manage user identities and authentication.
+- **Simplified User Management:** Easily add, remove, or modify user access across multiple systems.
+- **Improved Security:** Utilize robust authentication protocols and encryption provided by external IdPs.
+- **Compliance:** Meet regulatory requirements by using industry-standard identity management solutions.
+
+### Configuring AMQ with External Identity Providers
+
+To secure AMQ with external Identity Providers, follow these steps:
+
+1. **Choose an Identity Provider:** Select a suitable external IdP, such as RH-SSO, Microsoft Active Directory, or LDAP.
+2. **Configure the Identity Provider:** Set up the chosen IdP with appropriate realms, users, roles, and authentication methods.
+3. **Configure AMQ Broker:** Update the AMQ broker configuration to use the external IdP for authentication. This typically involves setting up a security realm and configuring the appropriate authentication provider.
+4. **Map IdP Roles to AMQ Roles:** Associate IdP roles with AMQ roles to control access to AMQ resources.
+5. **Test the Configuration:** Verify that users can authenticate and access AMQ resources using their external IdP credentials.
+
+### Hands-on Activity: Securing AMQ with RH-SSO
+
+1. **Set up RH-SSO:** Install and configure RH-SSO with appropriate realms, users, and roles.
+2. **Configure AMQ Broker:** Update the AMQ broker configuration to use RH-SSO as the security realm and OAuth2 provider.
+3. **

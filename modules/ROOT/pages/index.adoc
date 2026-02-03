@@ -1,9 +1,9 @@
-=  Address Settings for AMQ Broker on OpenShift
+=  Course Outline: Red Hat AMQ on OpenShift
 :navtitle: Home
 
 == Introduction
 
-Course Title:  Address Settings for AMQ Broker on OpenShift
+Course Title:  Course Outline: Red Hat AMQ on OpenShift
 
 Description:
 Course description FIXME
@@ -13,13 +13,17 @@ Duration: FIXME hours
 == Topics covered in this course
 
 
-*  Configuring Address Settings
+*  Understanding the need for message oriented middleware
 
-*  Address Settings Configuration
+*  What is Red Hat AMQ
 
-*  Avoiding Default Configuration Inclusion
+*  Deploying AMQ on OpenShift
 
-*  Overlapping Address Settings
+*  Configuring AMQ on OpenShift
+
+*  Accessing AMQ deployed on OpenShift through external clients
+
+*  Hands-on Lab
 
 
 
